@@ -307,7 +307,7 @@ MDMT_BLOCK_B = LikertBlock(
         Item("mdmt_considerate", "considerate", "benevolent"),
         Item("mdmt_consistent", "consistent", "reliable"),
         Item("mdmt_meticulous", "meticulous", "competent"),
-        Item("mdmt_integrity", "integrous",  "ethical"), 
+        Item("mdmt_honorable", "honorable",  "ethical"), 
         Item("mdmt_genuine", "genuine", "sincere"),
     ),
 )
