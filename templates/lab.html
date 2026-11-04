@@ -1,0 +1,111 @@
+{#
+  lab.html — Researcher console (custom.lab_dashboard; localhost or Basic auth).
+  Starts a participant session on this workstation without AMT/Prolific by
+  generating the psiTurk ids that /consent expects, shows enrolment per
+  condition, and links to CSV exports of the custom tables.
+  Context: counts, exports, default_session. The two cards are paged together
+  by static/js/pager.js (no scrolling).
+#}
+{% extends "layout.html" %}
+{% block title %}Researcher console · {{ study.short_title }}{% endblock %}
+
+{% block content %}
+<div class="pager pager-plain" data-pager>
+<div class="pager-body">
+<article class="card" data-pager-group>
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Researcher console</p>
+    <h1>Start a session</h1>
+    <p class="lead">Fill this in, click <em>Start</em>, then hand the workstation to the participant.</p>
+  </header>
+
+  <form id="launch-form" class="lab-form" novalidate data-unit>
+    <div class="question">
+      <label class="question-label" for="worker">Participant code</label>
+      <input type="text" id="worker" required pattern="[A-Za-z0-9_.\-]{1,64}" autocomplete="off"
+             placeholder="e.g. P017">
+      <p class="question-help">Letters, numbers, “-”, “_” or “.”. Re-using a code is blocked in live mode.</p>
+    </div>
+    <div class="question">
+      <label class="question-label" for="session">Session id</label>
+      <input type="text" id="session" required pattern="[A-Za-z0-9_.\-]{1,64}" value="{{ default_session }}">
+    </div>
+    <div class="question">
+      <label class="question-label" for="mode">Mode</label>
+      <select id="mode">
+        <option value="live" selected>Live participant</option>
+        <option value="debug">Practice / pilot (mode “debug”, excluded from repeat checks)</option>
+      </select>
+    </div>
+    <p class="field-error" id="launch-error" hidden>Please enter a valid participant code and session id.</p>
+    <div class="btn-row btn-row-start">
+      <button type="submit" class="btn btn-primary">Start session on this workstation</button>
+    </div>
+  </form>
+</article>
+
+<article class="card" data-pager-group>
+  <div data-unit>
+  <h2>Enrolment by condition</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Condition</th><th>Started (live)</th><th>Completed (live)</th><th>Started (debug)</th><th>Completed (debug)</th></tr>
+    </thead>
+    <tbody>
+      {% for row in counts %}
+      <tr>
+        <td>{{ row.cond }} · {{ row.label }}</td>
+        <td>{{ row.started_live }}</td><td>{{ row.completed_live }}</td>
+        <td>{{ row.started_debug }}</td><td>{{ row.completed_debug }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div data-unit>
+  <h2>Export data</h2>
+  <div class="btn-row btn-row-start">
+    {% for name in exports %}<a class="btn btn-ghost" href="/lab/export/{{ name }}.csv">{{ name }}.csv</a>{% endfor %}
+  </div>
+  <p class="question-help">psiTurk’s own participants table (incl. condition assignment) is exported with
+    <code>psiturk download_datafiles</code> or directly from the database.</p>
+  </div>
+</article>
+</div>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+  var form = document.getElementById('launch-form');
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var worker = document.getElementById('worker');
+    var session = document.getElementById('session');
+    var ok = worker.checkValidity() && session.checkValidity();
+    document.getElementById('launch-error').hidden = ok;
+    if (!ok) return;
+    var mode = document.getElementById('mode').value;
+    // psiTurk treats ids starting with "debug" as debug sessions (restartable,
+    // never marked as quitters), so practice runs get that prefix.
+    var prefix = mode === 'debug' ? 'debug-' : '';
+    var params = new URLSearchParams({
+      hitId: prefix + 'INTERNAL_LAB',
+      assignmentId: prefix + session.value.trim(),
+      workerId: prefix + worker.value.trim(),
+      mode: mode
+    });
+    window.location.assign('/consent?' + params.toString());
+  });
+})();
+</script>
+{% endblock %}

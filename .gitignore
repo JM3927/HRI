@@ -1,0 +1,16 @@
+# Python environment
+test-environment/
+__pycache__/
+*.pyc
+
+# Local data & database files
+participants.db
+server.log
+
+# Secret keys and configurations
+.env
+config.txt
+
+# OS-specific hidden noise
+.DS_Store
+Thumbs.db

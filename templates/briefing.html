@@ -1,0 +1,166 @@
+{#
+  briefing.html — Study briefing, shown after consent and before the pre-test
+  (rendered by custom.briefing). Context: ids = {hitId, assignmentId, workerId, mode}.
+
+  Follows the usual HRI procedure: once consent is given, participants are
+  told what the study is about, what will happen step by step, what is and is
+  not recorded, and how to stop or get help, and are invited to ask the
+  researcher questions before anything starts.
+
+  The wording is identical in every condition and keeps the study's cover
+  framing ("different kinds of counselors, some of them robots"). It does not
+  name the conditions or the hypotheses; those are explained in the debrief
+  (complete.html). If you edit this page, keep it condition-neutral.
+
+  Paged by static/js/pager.js. Each <section data-pager-break> starts a new
+  page (one topic per page); a topic that is too tall for the screen continues
+  on the next page with its heading repeated. "Start Part 1" submits the hidden
+  form below, which forwards to /pretest with consent=agree&briefed=1.
+#}
+{% extends "layout.html" %}
+{% block title %}About this study · {{ study.short_title }}{% endblock %}
+
+{% block header_extra %}
+<div class="header-progress" aria-label="Study progress">
+  <span class="step is-done">Consent</span><span class="step is-current">Study info</span><span class="step">About you</span><span class="step">Conversation</span><span class="step">Your impressions</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<article class="card briefing pager pager-fill" id="briefing-panel" data-pager data-pager-nav="always">
+  <div class="pager-body">
+
+  {# ---------------------------------------------------------------- 1 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <header class="card-header" data-unit>
+      <p class="eyebrow">Study briefing</p>
+      <h1>Welcome, and thank you for taking part</h1>
+      <p class="lead">Before we start, here is what this study is about and what will happen. It takes about two
+        minutes to read. Please read each page carefully.</p>
+    </header>
+
+    <h2>What this study is about</h2>
+    <p data-unit>Counseling is no longer only offered face to face. People can now also talk with chatbots,
+      virtual agents, and social robots. The effects of these counselor variations are not studied very deeply for mental-health check-ins.</p>
+    <p data-unit>This study compares <strong>different kinds of counselors, and some of them are robots</strong>.
+      We want to understand how people experience a short check-in conversation with a counselor: how
+      comfortable it feels, what you think of the counselor, and whether you would talk to one like it again.</p>
+    <p data-unit>You will meet <strong>one</strong> counselor, chosen at random. Everyone hears the same
+      questions. We are interested in <em>your</em> honest impressions. We are not testing you, and there are
+      no right or wrong answers.</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 2 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>What will happen</h2>
+    <p data-unit>The study has three parts and takes about {{ study.duration_minutes }} minutes in total.
+      The bar at the top of the screen shows where you are.</p>
+    <ol class="brief-steps" data-pager-group>
+      <li data-unit>
+        <span class="brief-step-num" aria-hidden="true">1</span>
+        <span class="brief-step-title">About you</span>
+        <span class="brief-step-time">about 5 min</span>
+        <p>A questionnaire about your background, your experience with technology and robots, and your views
+          on seeking help with stress or mental health.</p>
+      </li>
+      <li data-unit>
+        <span class="brief-step-num" aria-hidden="true">2</span>
+        <span class="brief-step-title">The conversation</span>
+        <span class="brief-step-time">about 5 min</span>
+        <p>A short check-in conversation with the chosen counselor variation about how you have been doing, video and audio are included.
+          The next page explains how it works.</p>
+      </li>
+      <li data-unit>
+        <span class="brief-step-num" aria-hidden="true">3</span>
+        <span class="brief-step-title">Your impressions</span>
+        <span class="brief-step-time">about 8 min</span>
+        <p>A questionnaire about the conversation and the counselor you spoke with.</p>
+      </li>
+    </ol>
+    <p class="brief-after" data-unit><strong>Afterwards:</strong> we explain the study in full (about 2 min).</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 3 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>How the conversation works</h2>
+    <ul class="brief-list" data-pager-group>
+      <li data-unit><strong>Put on the headphones.</strong> Before the conversation starts, you will play a test
+        tone and set a comfortable volume.</li>
+      <li data-unit><strong>Listen.</strong> The counselor speaks to you through the headphones. The conversation
+        follows a set script.</li>
+      <li data-unit><strong>Answer by clicking.</strong> When the counselor finishes speaking, answer choices
+        appear on the right side of the screen. Click (or tap) the one that feels closest to true for you. The counselor cannot
+        hear you, so you do not need to speak.</li>
+      <li data-unit><strong>The counselor responds</strong> to your answer and then asks the next question.
+        There are 5 or 6 questions about how you have been feeling, what has been on your mind, how you cope,
+        and the support you have. There is also a summary question at the end.</li>
+      <li data-unit><strong>Take your time.</strong> There is no time limit. The conversation cannot be paused or
+        replayed, so please give it your full attention while it is running.</li>
+      <li data-unit><strong>Stay on this page.</strong> Please do not refresh the page, use the browser's back
+        button, or switch to other windows during the study.</li>
+    </ul>
+  </section>
+
+  {# ---------------------------------------------------------------- 4 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>What we record</h2>
+    <div class="brief-columns" data-pager-group>
+      <div class="brief-box" data-unit>
+        <h3>We record</h3>
+        <ul>
+          <li>Your questionnaire answers</li>
+          <li>The answers you choose in the conversation</li>
+          <li>How long you take to choose each answer</li>
+          <li>Which counselor you met</li>
+          <li>Basic technical details, such as the type of web browser</li>
+        </ul>
+      </div>
+      <div class="brief-box" data-unit>
+        <h3>We do not record</h3>
+        <ul>
+          <li>Your voice</li>
+          <li>Any picture or video of you</li>
+          <li>Your name. Your answers are de-identified.</li>
+        </ul>
+      </div>
+    </div>
+    <p data-unit>Your answers are not seen by anyone except the researchers, and they are not used for treatment. They are
+      analysed only as research data.</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 5 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>Looking after yourself</h2>
+    <p data-unit>Some questions ask about stress, mood, and the support you have. If a question feels
+      uncomfortable, choose the answer that feels closest; you do not need to explain it.</p>
+    <p data-unit><strong>You can stop at any time</strong>, for any reason, without penalty. Simply exit the tab, and the study will stop.</p>
+    <p data-unit>This study is not therapy. If you would like to talk to someone about how you are feeling, the
+      support line at the bottom of every page is available at any time. You can also speak to the researcher
+      at any point.</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 6 #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>Before you begin</h2>
+    <p data-unit><strong>Do you have any questions?</strong> Please ask the researcher now, before you start.
+      Once you begin, the researcher can still help with anything technical, or if you want to stop.</p>
+    <p data-unit>When you are ready, click <em>Start Part 1</em>. You will begin with the questionnaire about
+      you.</p>
+  </section>
+
+  </div>
+
+  <form id="briefing-form" action="/pretest" method="get" hidden>
+    {% for key, value in ids.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+    <input type="hidden" name="consent" value="agree">
+    <input type="hidden" name="briefed" value="1">
+  </form>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="submit" class="btn btn-primary" form="briefing-form" data-pager-final>Start Part 1</button>
+  </div>
+</article>
+{% endblock %}

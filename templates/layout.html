@@ -1,0 +1,44 @@
+<!doctype html>
+<!--
+  layout.html — shared shell for every participant-facing page.
+  `study` is injected into all templates by custom.py (inject_study_info).
+  The window never scrolls: long content is split into pages by
+  static/js/pager.js (loaded here, before each page's own scripts).
+  The page is deliberately light-theme only: every participant on every lab
+  workstation must see identical colours, so no prefers-color-scheme switch.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{{ study.short_title }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="site-header">
+    <div class="site-header-inner">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div class="brand-text">
+        <span class="brand-institution">{{ study.institution }}</span>
+        <span class="brand-study">{{ study.short_title }}</span>
+      </div>
+      {% block header_extra %}{% endblock %}
+    </div>
+  </header>
+
+  <main class="page {% block page_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="support-footer" role="contentinfo">
+    You may stop at any time. If you feel distressed, support is available 24/7 —
+    call or text <strong>{{ study.crisis_line }}</strong> (US Suicide &amp; Crisis Lifeline)
+    or {{ study.crisis_text }}. In an emergency, call your local emergency number.
+  </footer>
+
+  <script src="/static/js/pager.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

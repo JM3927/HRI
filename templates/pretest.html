@@ -1,0 +1,66 @@
+{#
+  pretest.html — Pre-session questionnaire (rendered by custom.pretest).
+  Context: ids, choices (gender, ethnicity, prior therapy), blocks (tech,
+  ATSPPH-SF, openness to AI counseling, RAS), age_min, age_max. Submitted as JSON to
+  /api/save_pretest by static/js/survey.js; the server redirects to /exp.
+#}
+{% extends "layout.html" %}
+{% from "macros.html" import likert_block, choice_question %}
+{% block title %}About you · {{ study.short_title }}{% endblock %}
+
+{% block header_extra %}
+<div class="header-progress" aria-label="Study progress">
+  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-current">About you</span><span class="step">Conversation</span><span class="step">Your impressions</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<form class="card survey pager pager-fill" id="survey-form" novalidate data-pager data-pager-nav="always"
+      data-endpoint="/api/save_pretest" data-ids='{{ ids|tojson }}'>
+  <div class="pager-body">
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Part 1 of 3</p>
+    <h1>About you</h1>
+    <p class="lead">Please answer every question. There are no right or wrong answers.</p>
+  </header>
+
+  <fieldset class="survey-block" data-pager-group>
+    <legend class="survey-block-title">Background</legend>
+
+    <div class="question" data-required="age" data-unit>
+      <label class="question-label" for="age">What is your age in years?</label>
+      <input type="number" id="age" name="age" class="input-short" inputmode="numeric"
+             min="{{ age_min }}" max="{{ age_max }}" step="1" autocomplete="off"
+             data-min="{{ age_min }}" data-max="{{ age_max }}">
+      <p class="field-error" data-error-for="age" hidden>Please enter a whole number between {{ age_min }} and {{ age_max }}.</p>
+    </div>
+
+    {% for q in choices %}{{ choice_question(q) }}{% endfor %}
+  </fieldset>
+
+  {% for block in blocks %}{{ likert_block(block) }}{% endfor %}
+  </div>
+
+  <div class="pager-nav">
+    <div class="form-alert alert alert-error pager-alert" id="form-error" role="alert" hidden></div>
+    <span class="answered-count" id="answered-count" aria-live="polite"></span>
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="submit" class="btn btn-primary" id="submit-btn" data-pager-final>Continue to the conversation</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/survey.js"></script>
+<script>
+  SurveyForm.attach(document.getElementById('survey-form'), {
+    // Pre-test payload carries the psiTurk ids because no Participant row exists yet.
+    buildPayload: function (form, responses) {
+      var ids = JSON.parse(form.getAttribute('data-ids'));
+      return Object.assign({}, ids, { responses: responses });
+    }
+  });
+</script>
+{% endblock %}

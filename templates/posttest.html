@@ -1,0 +1,62 @@
+{#
+  posttest.html — Post-session questionnaire (rendered by custom.posttest).
+  Context: unique_id, mode, blocks (MDMT v2 in two blocks, willingness to
+  use, CARE, disclosure comfort incl. attention check, Godspeed
+  anthropomorphism), manipulation_check, comments_max.
+  Wording is identical in every condition; the condition is never sent here.
+#}
+{% extends "layout.html" %}
+{% from "macros.html" import likert_block, choice_question %}
+{% block title %}Your impressions · {{ study.short_title }}{% endblock %}
+
+{% block header_extra %}
+<div class="header-progress" aria-label="Study progress">
+  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-done">About you</span><span class="step is-done">Conversation</span><span class="step is-current">Your impressions</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<form class="card survey pager pager-fill" id="survey-form" novalidate data-pager data-pager-nav="always"
+      data-endpoint="/api/save_posttest" data-unique-id="{{ unique_id }}">
+  <div class="pager-body">
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Part 3 of 3</p>
+    <h1>Your impressions of the conversation</h1>
+    <p class="lead">Think about the therapist you just spoke with. Please answer every question.</p>
+  </header>
+
+  {% for block in blocks %}{{ likert_block(block) }}{% endfor %}
+
+  <fieldset class="survey-block" data-pager-group>
+    <legend class="survey-block-title">About the therapist</legend>
+    {{ choice_question(manipulation_check) }}
+
+    <div class="question" data-unit>
+      <label class="question-label" for="comments">Is there anything else you would like to tell us about the conversation? <span class="optional">(optional)</span></label>
+      <textarea id="comments" name="comments" rows="4" maxlength="{{ comments_max }}"
+                placeholder="Please do not include names or other identifying details."></textarea>
+    </div>
+  </fieldset>
+  </div>
+
+  <div class="pager-nav">
+    <div class="form-alert alert alert-error pager-alert" id="form-error" role="alert" hidden></div>
+    <span class="answered-count" id="answered-count" aria-live="polite"></span>
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="submit" class="btn btn-primary" id="submit-btn" data-pager-final>Submit and finish</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/survey.js"></script>
+<script>
+  SurveyForm.attach(document.getElementById('survey-form'), {
+    buildPayload: function (form, responses) {
+      return { uniqueId: form.getAttribute('data-unique-id'), responses: responses };
+    }
+  });
+</script>
+{% endblock %}

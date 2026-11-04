@@ -1,0 +1,148 @@
+{#
+  consent.html — Informed consent (rendered by custom.consent_gate).
+  Context: ids = {hitId, assignmentId, workerId, mode}, consent_version.
+  "Agree" is enabled only after all three affirmations are ticked and then
+  forwards to the study briefing (/briefing) with consent=agree. "Decline"
+  stores nothing.
+  Split into screen-sized pages by static/js/pager.js: each section is a group
+  (its heading repeats if it continues on the next page); the decision buttons
+  sit in the nav bar and appear on the last page, next to the affirmations.
+#}
+{% extends "layout.html" %}
+{% block title %}Consent to participate · {{ study.short_title }}{% endblock %}
+
+{% block content %}
+<article class="card consent pager pager-fill" id="consent-panel" data-pager>
+  <div class="pager-body">
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Informed consent · {{ consent_version }}</p>
+    <h1>{{ study.title }}</h1>
+    <dl class="meta-grid">
+      <div><dt>Principal investigator</dt><dd>{{ study.pi_name }}</dd></div>
+      <div><dt>Institution</dt><dd>{{ study.institution }}</dd></div>
+      <div><dt>Time required</dt><dd>About {{ study.duration_minutes }} minutes</dd></div>
+    </dl>
+  </header>
+
+  <div class="consent-body" data-pager-group>
+    <section data-pager-group>
+      <h2>Purpose of the study</h2>
+      <p data-unit>We are studying how people experience short check-in conversations with different variations of
+        conversational counselors. Your answers will help researchers understand what makes people feel
+        comfortable and supported when talking with differing counselors.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>What you will do</h2>
+      <ol data-unit>
+        <li>Answer a short questionnaire about yourself, your experience with technology,  robots, and your attitudes toward counseling.</li>
+        <li>Take part in a brief, pre-scripted check-in conversation (about 5 minutes). The pre-recorded counselor speaks through
+          your headphones, and you respond by choosing from multiple-choice answers on screen.</li>
+        <li>Answer a questionnaire about your impressions of the conversation.</li>
+      </ol>
+      <p data-unit>Your voice and image are <strong>not</strong> recorded. We record only the answers you click and how long
+        each answer takes.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>This is not therapy</h2>
+      <p data-unit>The conversation is a research simulation. It is not a clinical assessment, diagnosis, or treatment, and no
+        one will review your answers to provide care. If you would like mental health support, please contact a
+        qualified professional or the resources listed at the bottom of every page.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>Risks and discomforts</h2>
+      <p data-unit>Some questions ask you to reflect on stress, mood, and social support, which could cause
+        mild discomfort. You may skip the study, pause, or stop at any time without penalty.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>Confidentiality</h2>
+      <p data-unit>Your responses are stored on a secure, private database, and are de-identified. De-identified data may be shared
+        with other researchers or in public data repositories.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>Voluntary participation</h2>
+      <p data-unit>Participation is voluntary. You may decline now or withdraw at any time by closing this window. If you withdraw, your data will not be used.</p>
+    </section>
+
+    <section data-pager-group>
+      <h2>Contact</h2>
+      <p data-unit>Questions about the study: {{ study.pi_name }}, <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.<br></p>
+    </section>
+  </div>
+
+  {# One unit, so the affirmations always share the last page with the Agree button. #}
+  <form class="consent-form" id="consent-form" novalidate data-unit>
+    <h2>Your consent</h2>
+    <label class="check">
+      <input type="checkbox" name="affirm" value="age">
+      <span>I am 18 years of age or older.</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="affirm" value="read">
+      <span>I have read and understood the information above, and my questions have been answered.</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="affirm" value="not_therapy">
+      <span>I understand this conversation is a research simulation and not mental health treatment.</span>
+    </label>
+  </form>
+  </div>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="button" class="btn btn-ghost" id="decline-btn" data-pager-final>I do not agree</button>
+    <button type="button" class="btn btn-ghost" onclick="window.print()" data-pager-final>Print a copy</button>
+    <button type="submit" class="btn btn-primary" id="agree-btn" form="consent-form" data-pager-final disabled>I agree to participate</button>
+  </div>
+</article>
+
+<article class="card message-card" id="decline-panel" hidden>
+  <h1>Thank you for your time</h1>
+  <p>You chose not to take part. No information about you has been recorded.</p>
+  <p>You may now close this window or let the researcher know.</p>
+  <div class="btn-row">
+    <button type="button" class="btn btn-ghost" id="reconsider-btn">Go back to the consent form</button>
+  </div>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+  var ids = {{ ids|tojson }};
+  var form = document.getElementById('consent-form');
+  var agree = document.getElementById('agree-btn');
+  var boxes = Array.prototype.slice.call(form.querySelectorAll('input[name="affirm"]'));
+
+  // Enable "Agree" only once every affirmation is ticked.
+  function sync() { agree.disabled = !boxes.every(function (b) { return b.checked; }); }
+  boxes.forEach(function (b) { b.addEventListener('change', sync); });
+  sync();
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (agree.disabled) return;
+    agree.disabled = true;
+    var params = new URLSearchParams(ids);
+    params.set('consent', 'agree');
+    window.location.assign('/briefing?' + params.toString());
+  });
+
+  document.getElementById('decline-btn').addEventListener('click', function () {
+    document.getElementById('consent-panel').hidden = true;
+    document.getElementById('decline-panel').hidden = false;
+  });
+  document.getElementById('reconsider-btn').addEventListener('click', function () {
+    document.getElementById('decline-panel').hidden = true;
+    document.getElementById('consent-panel').hidden = false;
+  });
+})();
+</script>
+{% endblock %}

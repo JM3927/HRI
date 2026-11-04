@@ -1,0 +1,53 @@
+{#
+  complete.html — Debrief shown after the post-test (rendered by
+  custom.complete_gate, which also marks the psiTurk Participant COMPLETED).
+  Context: completion_code, mode. Paged by static/js/pager.js (no scrolling).
+#}
+{% extends "layout.html" %}
+{% block title %}Thank you · {{ study.short_title }}{% endblock %}
+
+{% block content %}
+<article class="card debrief pager" data-pager>
+  <div class="pager-body">
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Study complete</p>
+    <h1>Thank you for taking part</h1>
+    <p class="lead">Your responses have been saved. Please let the researcher know you have finished.</p>
+  </header>
+
+  <section data-pager-group>
+    <h2>About this study</h2>
+    <p data-unit>This study compares how people respond to the <em>same</em> check-in conversation delivered by different kinds of
+      therapists. Each participant was randomly assigned to one version: a human therapist, an expressive social robot,
+      or a mechanical robot. The words spoken were identical in every version; only the therapist’s voice and
+      appearance differed.</p>
+    <p data-unit>The conversation was pre-recorded and followed a fixed script that responded to the answer you chose. No one
+      was listening live, and your answers were not reviewed by a clinician. We measured how much people trusted each
+      therapist, how comfortable they felt sharing, and whether they would use such a therapist in the future.</p>
+    <p data-unit>Because other people may still take part, please do not discuss the details of the study with others.</p>
+  </section>
+
+  <section data-pager-group>
+    <h2>If you would like support</h2>
+    <p data-unit>If the conversation brought up difficult feelings, please reach out. In the US you can call or text
+      <strong>{{ study.crisis_line }}</strong> at any time, or {{ study.crisis_text }}. Your campus or workplace
+      counseling service can also help. In an emergency, call your local emergency number.</p>
+  </section>
+
+  <section data-pager-group>
+    <h2>Questions or withdrawal</h2>
+    <p data-unit>Contact {{ study.pi_name }} at <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.</p>
+  </section>
+
+  {% if mode == 'debug' %}
+  <p class="debug-note" data-unit>Debug session — this record is stored with mode “debug” and can be excluded from analysis.</p>
+  {% endif %}
+  </div>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+  </div>
+</article>
+{% endblock %}

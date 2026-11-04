@@ -1,0 +1,23 @@
+{#
+  message.html — Generic participant-facing notice (invalid links, repeat
+  participation, missing sessions). Context: title, body.
+  Short, but paged like every other page so it can never overflow a small screen.
+#}
+{% extends "layout.html" %}
+{% block title %}{{ title }} · {{ study.short_title }}{% endblock %}
+
+{% block content %}
+<article class="card message-card pager" data-pager>
+  <div class="pager-body">
+  <h1 data-unit>{{ title }}</h1>
+  <p data-unit>{{ body }}</p>
+  <p class="muted" data-unit>Questions? Contact <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.</p>
+  </div>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+  </div>
+</article>
+{% endblock %}

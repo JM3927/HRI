@@ -1,0 +1,162 @@
+{#
+  exp.html — Interactive therapist session.
+
+  Rendered by psiTurk's own /exp view (after custom.exp_gate has checked
+  consent and the pre-test). psiTurk supplies: uniqueId, condition,
+  counterbalance, adServerLoc, mode. The `default` filters keep the page
+  renderable even if a psiTurk release omits one of them.
+
+  All behaviour lives in static/js/task.js; this file is layout only:
+    #preload-modal   audio/video preloader with progress bar + sound check
+    #avatar-stage    condition-specific avatar (drawn, portrait, or recorded video)
+    #visualizer      live audio visualiser (identical across conditions)
+    #question-card   question + options, revealed only after audio ends
+    #finish-modal    final save before moving to the post-test
+  Nothing scrolls: the session grid fills the window (the avatar is the largest
+  square that fits) and the preloader is paged by static/js/pager.js, so on a
+  short screen the sound check and the instructions become two steps.
+#}
+{% extends "layout.html" %}
+{% block title %}Conversation · {{ study.short_title }}{% endblock %}
+{% block body_class %}exp-page{% endblock %}
+
+{% block header_extra %}
+<div class="header-progress" aria-label="Study progress">
+  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-done">About you</span><span class="step is-current">Conversation</span><span class="step">Your impressions</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- ============================ Preloader ============================ -->
+<div class="modal" id="preload-modal" role="dialog" aria-modal="true" aria-labelledby="preload-title">
+  <div class="modal-card pager" data-pager>
+    <div class="pager-body">
+    <header data-unit>
+      <p class="eyebrow">Part 2 of 3</p>
+      <h1 id="preload-title">Preparing your conversation</h1>
+    </header>
+
+    <div id="preload-loading" data-unit>
+      <p id="preload-message">Loading the audio so the conversation plays smoothly. This takes a few seconds.</p>
+      <div class="progress" id="preload-progress" role="progressbar"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="preload-message">
+        <div class="progress-fill" id="preload-fill"></div>
+      </div>
+      <p class="progress-meta">
+        <span id="preload-count">0 of 0 files</span>
+        <span id="preload-bytes"></span>
+      </p>
+    </div>
+
+    <div class="alert alert-error" id="preload-error" role="alert" data-unit hidden>
+      <p id="preload-error-text"><strong>Some files could not be loaded.</strong> Please tell the researcher.</p>
+      <ul class="missing-list" id="preload-missing"></ul>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="preload-retry">Try again</button>
+        <button type="button" class="btn btn-ghost" id="preload-simulate" hidden>Continue with simulated audio (debug only)</button>
+      </div>
+    </div>
+
+    <div id="soundcheck" hidden>
+      <div data-unit>
+      <h2>Sound check</h2>
+      <p>Please put on the headphones. Play the test tone and adjust the volume until it is clear and comfortable.</p>
+      <div class="btn-row btn-row-start">
+        <button type="button" class="btn btn-ghost" id="tone-btn">▶ Play test tone</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="tone-ok">
+        <span>I can hear the tone clearly at a comfortable volume.</span>
+      </label>
+      </div>
+
+      <div data-unit>
+      <h2>How the conversation works</h2>
+      <ul class="howto">
+        <li>The therapist will speak to you through your headphones.</li>
+        <li>When they finish speaking, answer choices will appear. Choose the one that feels closest to true for you.</li>
+        <li>There are no right or wrong answers, and the conversation cannot be paused or replayed.</li>
+      </ul>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="begin-btn" disabled>Begin conversation</button>
+      </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="pager-nav">
+      <span class="pager-count" data-pager-count></span>
+      <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+      <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ Session ============================== -->
+<section class="session" id="session" aria-label="Conversation with the therapist">
+  <ol class="stage-track" id="stage-track" aria-label="Conversation progress">
+    <li data-stage="1"><span>Check-in</span></li>
+    <li data-stage="2"><span>What's on your mind</span></li>
+    <li data-stage="3"><span>Coping</span></li>
+    <li data-stage="4"><span>Support</span></li>
+    <li data-stage="5"><span>Goals</span></li>
+    <li data-stage="6"><span>Wrap-up</span></li>
+  </ol>
+
+  <div class="session-grid">
+    <div class="avatar-panel">
+      <div class="avatar-stage-wrap"><div class="avatar-stage" id="avatar-stage" aria-hidden="true"></div></div>
+      <canvas class="visualizer" id="visualizer" aria-hidden="true"></canvas>
+      <div class="status-pill" id="status-pill" data-state="idle">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Getting ready</span>
+      </div>
+    </div>
+
+    <div class="question-panel">
+      <div class="question-card" id="question-card" data-state="idle" aria-live="polite">
+        <p class="question-eyebrow" id="question-eyebrow">Your conversation will begin shortly.</p>
+        <h2 class="question-text" id="question-text"></h2>
+        <p class="caption" id="caption" hidden></p>
+        <div class="options" id="options" role="group" aria-labelledby="question-text"></div>
+        <div class="resume" id="resume" hidden>
+          <p>Playback was blocked by the browser.</p>
+          <button type="button" class="btn btn-primary" id="resume-btn">Continue</button>
+        </div>
+      </div>
+      <div class="alert alert-warn" id="save-warning" role="status" hidden>
+        Having trouble reaching the server — your answers are being kept and will be retried automatically.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Finish =============================== -->
+<div class="modal" id="finish-modal" role="dialog" aria-modal="true" aria-labelledby="finish-title" hidden>
+  <div class="modal-card">
+    <h1 id="finish-title">Saving your conversation…</h1>
+    <p id="finish-message">One moment, please.</p>
+    <div class="spinner" id="finish-spinner" aria-hidden="true"></div>
+    <div class="btn-row" id="finish-actions" hidden>
+      <button type="button" class="btn btn-primary" id="finish-retry">Try saving again</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Values injected by the psiTurk server.
+  var uniqueId = {{ uniqueId|default('')|tojson }};
+  var adServerLoc = {{ adServerLoc|default('/complete')|tojson }};
+  var mode = {{ mode|default('debug')|tojson }};
+  var condition = parseInt({{ condition|default(-1)|tojson }}, 10);
+  var counterbalance = parseInt({{ counterbalance|default(0)|tojson }}, 10);
+</script>
+<!-- psiTurk client library and its dependencies (from the psiTurk project scaffold). -->
+<script src="/static/lib/jquery-min.js"></script>
+<script src="/static/lib/underscore-min.js"></script>
+<script src="/static/lib/backbone-min.js"></script>
+<script src="/static/js/psiturk.js"></script>
+<script src="/static/js/task.js"></script>
+{% endblock %}

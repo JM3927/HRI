@@ -1,0 +1,98 @@
+{#
+  macros.html — survey building blocks shared by pretest.html and posttest.html.
+  Blocks and questions come from instruments.py, so the rendered form, the
+  server-side validation and the database columns always use the same ids.
+#}
+
+{#
+  A matrix of Likert items that share one response scale.
+  block.semantic: each row is a word pair (Godspeed) — the low anchor sits in
+  the label column and the high anchor in an extra column on the right.
+  block.stem: lead-in shown over the item column ("The therapist …").
+  item.help: smaller explanatory line under the item text (CARE).
+  Paging (static/js/pager.js): the fieldset is a group box, each item row a
+  unit, so a long block continues on the next page with its title, instructions
+  and column headings repeated.
+#}
+{% macro likert_block(block) %}
+<fieldset class="survey-block" data-block="{{ block.id }}" data-pager-group>
+  <legend class="survey-block-title">{{ block.title }}</legend>
+  {% if block.instructions %}<p class="block-instructions">{{ block.instructions }}</p>{% endif %}
+
+  {# Compact legend, shown only on narrow screens where column headers are hidden. #}
+  <p class="likert-legend">
+    {% if block.semantic %}
+    {{ block.scale_min }} = the word on the left · {{ block.scale_max }} = the word on the right
+    {% else %}
+    {% if block.stem %}{{ block.stem }} · {% endif %}{{ block.scale_min }} = {{ block.labels[0] }} · {{ block.scale_max }} = {{ block.labels[-1] }}
+    {% if block.allow_na %} · N/A = {{ block.na_label }}{% endif %}
+    {% endif %}
+  </p>
+
+  <div class="likert{% if block.semantic %} likert-semantic{% endif %}" style="--points: {{ block.points|length + (1 if block.allow_na else 0) }}">
+    <div class="likert-row likert-head" aria-hidden="true">
+      <span class="likert-item-label likert-stem">{{ block.stem }}</span>
+      {% for p in block.points %}
+      <span class="likert-col">
+        <span class="likert-num">{{ p }}</span>
+        <span class="likert-anchor">{{ block.labels[loop.index0] }}</span>
+      </span>
+      {% endfor %}
+      {% if block.allow_na %}<span class="likert-col likert-col-na"><span class="likert-anchor">{{ block.na_label }}</span></span>{% endif %}
+      {% if block.semantic %}<span class="likert-item-label"></span>{% endif %}
+    </div>
+
+    {% for item in block.items %}
+    <div class="likert-row" role="radiogroup" aria-labelledby="lbl-{{ item.id }}"
+         data-required="{{ item.id }}" data-unit>
+      {% if block.semantic %}
+      <span class="likert-item-label sd-left" id="lbl-{{ item.id }}">{{ item.left }}<span class="sr-only"> to {{ item.right }}</span><span class="sd-mobile-right" aria-hidden="true"> ↔ {{ item.right }}</span></span>
+      {% else %}
+      <span class="likert-item-label" id="lbl-{{ item.id }}">{{ item.text }}{% if item.help %}<span class="likert-item-help">{{ item.help }}</span>{% endif %}</span>
+      {% endif %}
+      {% for p in block.points %}
+      <label class="likert-cell">
+        <input type="radio" name="{{ item.id }}" value="{{ p }}">
+        <span class="likert-dot" aria-hidden="true">{{ p }}</span>
+        <span class="sr-only">{{ p }}{% if block.labels[loop.index0] %} – {{ block.labels[loop.index0] }}{% endif %}</span>
+      </label>
+      {% endfor %}
+      {% if block.allow_na %}
+      <label class="likert-cell likert-cell-na">
+        <input type="radio" name="{{ item.id }}" value="na">
+        <span class="likert-dot" aria-hidden="true">N/A</span>
+        <span class="sr-only">{{ block.na_label }}</span>
+      </label>
+      {% endif %}
+      {% if block.semantic %}<span class="likert-item-label sd-right" aria-hidden="true">{{ item.right }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</fieldset>
+{% endmacro %}
+
+
+{# A single- or multi-select categorical question, with optional self-describe box (one pager unit). #}
+{% macro choice_question(q) %}
+<fieldset class="question" data-required="{{ q.id }}" data-unit{% if q.multiple %} data-multiple="true"{% endif %}>
+  <legend class="question-label">{{ q.text }}</legend>
+  {% if q.help %}<p class="question-help">{{ q.help }}</p>{% endif %}
+  <div class="choice-list">
+    {% for c in q.choices %}
+    <label class="choice">
+      <input type="{{ 'checkbox' if q.multiple else 'radio' }}" name="{{ q.id }}" value="{{ c.value }}"
+             {% if c.value == 'prefer_not' %}data-exclusive="true"{% endif %}
+             {% if q.self_describe_value and c.value == q.self_describe_value %}data-reveals="{{ q.self_describe_field }}"{% endif %}>
+      <span>{{ c.label }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  {% if q.self_describe_field %}
+  <div class="self-describe" data-for="{{ q.self_describe_field }}" hidden>
+    <label for="{{ q.self_describe_field }}" class="sr-only">Please describe</label>
+    <input type="text" id="{{ q.self_describe_field }}" name="{{ q.self_describe_field }}"
+           maxlength="100" placeholder="Please describe (optional)" autocomplete="off">
+  </div>
+  {% endif %}
+</fieldset>
+{% endmacro %}
