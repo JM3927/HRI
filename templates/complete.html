@@ -38,10 +38,6 @@
     <h2>Questions or withdrawal</h2>
     <p data-unit>Contact {{ study.pi_name }} at <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.</p>
   </section>
-
-  {% if mode == 'debug' %}
-  <p class="debug-note" data-unit>Debug session — this record is stored with mode “debug” and can be excluded from analysis.</p>
-  {% endif %}
   </div>
 
   <div class="pager-nav">
