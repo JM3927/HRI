@@ -96,7 +96,7 @@
       "stage": 1,
       "audio": "n1_opening",
       "prompt": "Hello, and thank you for being here today. My name is Jackson, and I'll be guiding a short check-in conversation with you. There are no right or wrong answers, so just choose whatever feels closest to true for you. To start, how have you been feeling over the past few weeks?",
-      "question": "How have you been feeling over the past couple of weeks?",
+      "question": "How have you been feeling over the past few weeks?",
       "options": [
         { "text": "Pretty good, overall", "code": "mood_positive", "responseAudio": "n1_opening_r0",
           "responseTranscript": "I'm glad to hear that. It's still valuable to take some time to reflect on how things have been going, even if it's been going well.",
@@ -158,7 +158,7 @@
         { "text": "I have some support, but I don't always reach out", "code": "support_moderate", "responseAudio": "n4_support_r1",
           "responseTranscript": "That's very understandable. Even when support is there, it can be difficult to reach out.",
           "nextNodeId": "n5_goals" },
-        { "text": "I often feel like i don't have anyone to talk to", "code": "support_isolated", "responseAudio": "n4_support_r2",
+        { "text": "I often feel like I don't have anyone to talk to", "code": "support_isolated", "responseAudio": "n4_support_r2",
           "responseTranscript": "Thank you for sharing that. Feeling like you're on your own can be really hard, and I'd like to understand a little more.",
           "nextNodeId": "n4b_connection" }
       ]
@@ -168,7 +168,7 @@
       "stage": 4,
       "audio": "n4b_connection",
       "prompt": "When you feel like you don't have someone to talk to, what makes it difficult to reach out?",
-      "question": "What makes it hardest to connect with other people?",
+      "question": "What makes it hardest to reach out to others?",
       "options": [
         { "text": "I don't want to be a burden", "code": "barrier_burden", "responseAudio": "n4b_connection_r0",
           "responseTranscript": "Many people worry about that. It's understandable to not want to burden others, but it's also okay to ask for support.",
