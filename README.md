@@ -1,21 +1,42 @@
-# Therapist Embodiment Study — psiTurk experiment
+# Counselor Conversation Study (HRI)
 
-Between-subjects psiTurk 3 experiment comparing comfort, trust and willingness to
-consult three therapist embodiments that deliver the **same** branching
-clinical-intake script:
+**Conversations with Different Kinds of Counselors** — a between-subjects human–robot
+interaction experiment run on [psiTurk](https://psiturk.org) 3.3.1.
+Purdue University Northwest · PI: Justin Meng (meng172@pnw.edu).
 
-| psiTurk `condition` | Key       | Embodiment                                   | Media files                          |
-|---------------------|-----------|----------------------------------------------|--------------------------------------|
-| 0                   | `human`   | Human therapist (filmed actor)               | `static/video/human/*.mp4`           |
-| 1                   | `furhat`  | Furhat social robot (Furhat SDK, recorded)   | `static/video/furhat/*.mp4`          |
-| 2                   | `peerbot` | Mechanical, Peerbot-style robot (robotic TTS)| `static/audio/peerbot/*.mp4` for now |
+Participants watch and listen to one of three recorded counselors, chosen at random, who
+lead the **same** short, branching mental-health check-in. Only the counselor's
+embodiment differs. Afterwards, participants rate how much they trusted the counselor and
+whether they would use one like it.
 
-Peerbot's format is not decided yet. It plays `.mp4` audio with the drawn robot
-until its footage exists; then set its `media` to `'video'` in `CONDITIONS` in
-`static/js/task.js` and put the `.mp4` files in `static/video/peerbot/`
-(see [Video mode](#video-mode-recorded-robots-and-actor)).
+| `condition` | Key       | Counselor                                  | Clips                       |
+|-------------|-----------|--------------------------------------------|-----------------------------|
+| 0           | `human`   | Human therapist (filmed actor)             | `static/video/human/*.mp4`  |
+| 1           | `furhat`  | Furhat social robot (Furhat SDK recording) | `static/video/furhat/*.mp4` |
+| 2           | `peerbot` | Mechanical, Peerbot-style robot            | `static/video/peerbot/*.mp4`|
 
-Built and smoke-tested against **psiTurk 3.3.1** (Flask 1.1, SQLAlchemy 1.3).
+The counselor introduces itself as "Jackson" in every condition. Each condition has 28
+speaking clips plus a silent `idle.mp4` loop (87 videos in total, about 400 MB, stored
+with Git LFS).
+
+**Primary outcomes:** trust (MDMT v2: Performance and Moral trust) and willingness to use
+(UTAUT behavioural intention). Everything else is a covariate, a secondary outcome or a
+data-quality check.
+
+---
+
+## Contents
+
+* [Participant flow](#participant-flow)
+* [Setting up on Ubuntu](#setting-up-on-ubuntu)
+* [Running sessions](#running-sessions)
+* [Questionnaires](#questionnaires)
+* [The conversation](#the-conversation)
+* [Videos and recording](#videos-and-recording)
+* [Data](#data)
+* [Where to edit things](#where-to-edit-things)
+* [Files](#files)
+* [Notes for the write-up](#notes-for-the-write-up)
 
 ---
 
@@ -23,332 +44,402 @@ Built and smoke-tested against **psiTurk 3.3.1** (Flask 1.1, SQLAlchemy 1.3).
 
 ```
 /consent ─Agree─▶ /briefing ─▶ /pretest ─▶ /exp ─▶ /posttest ─▶ /complete
-   │ Decline: nothing stored                   │
-   │                              POST /api/save_trial  (one row per answered node)
-                         POST /api/save_pretest                POST /api/save_posttest
+   │                               │          │          │
+   │ Decline: nothing stored       │   POST /api/save_trial (one row per answer)
+                         POST /api/save_pretest        POST /api/save_posttest
 ```
 
-1. **Consent** — IRB-style form; *Agree* unlocks only after three affirmations.
-2. **Study briefing** (`templates/briefing.html`). This is the usual HRI briefing between
-   consent and the first questionnaire, with one topic per page:
-   * what the study is about (same cover framing for everyone);
-   * the three parts and how long each takes;
-   * how the conversation works;
-   * what is and is not recorded;
-   * how to stop or get support;
-   * a prompt to ask the researcher questions before starting.
+| # | Page | What happens |
+|---|------|--------------|
+| 1 | **Consent** (`/consent`) | Purpose, what you will do, "this is not therapy", risks, confidentiality, voluntary participation, contact. *I agree* unlocks only after three affirmations: 18 or older, read and understood, understands it is a research simulation and not treatment. *I do not agree* stores nothing. |
+| 2 | **Study briefing** (`/briefing`) | Six topics, one per page: what the study is about, what will happen (with times), how the conversation works, what is and is not recorded, looking after yourself, and an invitation to ask the researcher questions. Stores nothing. |
+| 3 | **About you** (`/pretest`) | Demographics, experience with technology and robots, help-seeking attitudes, openness to an AI/robot counselor, robot anxiety (26 questions). |
+| 4 | **Conversation** (`/exp`) | Videos load, then a sound check (test tone), then the conversation: 6 or 7 questions, each answered by clicking one of three options. |
+| 5 | **Your impressions** (`/posttest`) | Trust, willingness to use, empathy, disclosure comfort (including the attention check), anthropomorphism, "which counselor did you speak with?", and an optional comment (39 questions plus the comment). |
+| 6 | **Debrief** (`/complete`) | Explains the study and the three conditions, says the conversation was pre-recorded and scripted, asks participants not to discuss it, and repeats the support resources. The participant is marked COMPLETED. |
 
-   It is identical in every condition, does not name the conditions or the hypotheses,
-   and stores nothing. The pre-test cannot be opened without passing through it.
-3. **Pre-test** — age, gender, race/ethnicity, therapy history, tech familiarity,
-   robot exposure, help-seeking attitudes (ATSPPH-SF), openness to AI counseling,
-   Robot Anxiety Scale (11 items, 3 subscales; introduced with the same cover line
-   for everyone: the study compares different kinds of counselors, some of them robots).
-4. **Conversation** — audio preloaded into memory → sound check → 6 or 7 questions.
-   Each node: therapist prompt plays → options appear on `ended` → click → latency
-   saved → condition-specific acknowledgment plays → next node.
-5. **Post-test** — primary outcomes first: trust (MDMT v2 → Performance & Moral
-   trust) and willingness to use (UTAUT behavioural intention); then perceived
-   empathy (CARE), disclosure comfort (with the attention check), Godspeed
-   Anthropomorphism, the manipulation check and an optional comment.
-6. **Complete** — psiTurk participant marked COMPLETED; debrief with completion code
-   and support resources.
+* **Pages are gated on the server.** The briefing needs consent, the pre-test needs the
+  briefing, the conversation needs the pre-test, and so on. A participant cannot skip
+  ahead, redo the conversation, or retake a questionnaire.
+* **Same framing for everyone.** The consent, briefing and pre-test say only that the
+  study compares "different kinds of counselors, and some of them are robots". The
+  conditions and hypotheses are explained only in the debrief. Questionnaire wording is
+  identical across conditions; the post-test page is never told the condition.
+* **Support line on every page.** The footer shows 988 (US Suicide & Crisis Lifeline)
+  and the Crisis Text Line (text HOME to 741741).
+* **No scrolling.** No page ever scrolls. `static/js/pager.js` splits long content into
+  screen-sized pages with **Back / Next** and "Page n of N". Each questionnaire page
+  must be answered before *Next* works. The page count depends on the window size, so
+  run sessions in a maximised window or full screen (F11) for the fewest pages.
 
-Pages are gated server-side, so a participant cannot skip ahead, redo the conversation
-after finishing it, or re-take the pre-test.
+---
 
-## Screen layout: no scrolling
+## Setting up on Ubuntu
 
-No page ever shows a scroll bar. The window is a fixed column (header, content, crisis
-footer), and `static/js/pager.js` splits long content into screen-sized pages with
-**Back / Next** and a "Page n of N" counter:
+Tested with Python 3.10, psiTurk 3.3.1, Flask 1.1.4, SQLAlchemy 1.3.24, Jinja2 2.11.3.
 
-* **Consent, debrief, lab console, notices:** sections are packed into pages. A section
-  that continues onto the next page repeats its heading, and the consent affirmations
-  always sit on the last page next to *I agree*, *I do not agree* and *Print a copy*.
-  Printing still prints the whole consent form.
-* **Study briefing:** each topic starts on its own page (`data-pager-break` on its
-  `<section>`); a topic too tall for the screen continues on the next page. Add
-  `data-pager-break` to any unit or section, on any paged page, to force a page break there.
-* **Questionnaires:** each question (or Likert row) is placed whole. A Likert block that
-  continues repeats its title, instructions and column headings. *Next* only advances
-  once every question on the page is answered (unanswered ones are highlighted).
-* **Conversation:** the session fills the window. The avatar is the largest square that
-  fits, at least 140 px on phones, and the options always stay on screen. On short
-  screens the sound-check dialog becomes two steps.
+**1. Get the code and the videos.** The videos are stored with Git LFS. Without it you
+get 3-line placeholder files instead of videos, and the conversation will not load.
 
-Pages are rebuilt for the actual window size (and again if it is resized), so the page
-count depends on the screen. At 1366×657 (a 768-px laptop with browser bars), the
-pre-test is about 11 pages and the post-test about 14; at 1920×969 they are about 5 and
-7. If a single question is taller than the screen, the font is reduced (down to 12 px)
-and, as a last resort, that question is zoomed out. It is never cut off. For the fewest
-pages, run sessions in a maximised browser window or full screen (F11).
+```bash
+sudo apt install git git-lfs ffmpeg python3-venv
+git lfs install
+git clone https://github.com/JM3927/HRI.git
+cd HRI
+git lfs pull
+```
+
+**2. Install psiTurk** in a virtual environment:
+
+```bash
+python3 -m venv ~/psiturk-env
+source ~/psiturk-env/bin/activate
+pip install psiturk==3.3.1
+pip install -U pyopenssl
+```
+
+**3. Create `config.txt`.** It is not in the repository (it holds passwords and is in
+`.gitignore`). Start from psiTurk's default, for example with `psiturk-setup-example`
+in another folder, and copy its `config.txt` here. Then set:
+
+```ini
+[Database Parameters]
+assignments_table_name = Therapy_Participant_Data   ; optional; the default is "assignments"
+
+[Server Parameters]
+host = 0.0.0.0
+port = 22362
+login_username = <choose one>
+login_pw = <choose a strong password>
+secret_key = <long random string>
+
+[Task Parameters]
+num_conds = 3
+contact_email_on_error = meng172@pnw.edu
+```
+
+* `num_conds = 3` is **required** for the three conditions; the server logs an error at
+  start-up if it is anything else.
+* `login_username` / `login_pw` protect the researcher console and data exports from
+  other computers. Never commit them.
+
+**4. Start the server:**
+
+```bash
+psiturk server on
+```
+
+The database (`participants.db`, also git-ignored) and its tables are created on the
+first start. Stop the server with `psiturk server off`. **Restart it after editing any
+file**, because pages are cached while it runs.
+
+**5. Check the videos:**
+
+```bash
+python3 tools/audio_assets.py check
+```
+
+It prints `29/29 files present (incl. idle.mp4)` for each condition when every clip is
+there.
+
+---
+
+## Running sessions
+
+1. Open `http://<server>:22362/lab`. Requests from the server itself need no login;
+   anyone else is asked for `login_username` / `login_pw`.
+2. Enter a participant code and choose the mode:
+   * **Live participant:** real data. Re-using a participant code is blocked.
+   * **Practice / pilot:** ids get a `debug-` prefix and are stored with `mode = debug`,
+     so you can exclude them. Reusing codes is allowed.
+3. Click *Start session on this workstation* and hand the computer to the participant.
+   They need headphones.
+4. The console shows how many sessions have started and completed in each condition, and
+   links to the data exports.
+
+**Assignment.** psiTurk assigns each new participant at random to one of the conditions
+with the fewest participants (counted separately for each mode), so the groups stay
+balanced.
+
+**Pilot without videos.** In practice mode only, if videos fail to load, *Continue with
+simulated audio (debug only)* runs the flow with a drawn avatar and captions. Those
+answers are flagged `audio_simulated`.
+
+---
+
+## Questionnaires
+
+All items live in `instruments.py`, which drives how they are displayed, validated and
+scored. Scores are computed on the server.
+
+### About you (pre-test)
+
+| Block | Items | Scale | Score |
+|-------|-------|-------|-------|
+| Age, gender, race/ethnicity (multi-select), prior therapy | 4 | choices; age 18–80 | — |
+| Experience with technology | 2 | 1–7 | `tech_familiarity`, `robot_exposure` |
+| Attitudes toward counseling: ATSPPH-SF (Fischer & Farina, 1995) | 10 | 0–3; items 2, 4, 8, 9, 10 reversed | `atspph_total` (0–30) |
+| Openness to an AI or robotic counselor | 1 | 1–7 | `ai_counseling_openness` |
+| Feelings about robots: Robot Anxiety Scale (Nomura et al.), S1 and S3 only | 3 + 4 | 1–7 | `ras_s1_mean`, `ras_s3_mean`, `ras_total_mean` (mean of the 7 items) |
+
+### Your impressions (post-test), in this order
+
+| Block | Items | Scale | Score |
+|-------|-------|-------|-------|
+| **Trust:** MDMT v2 (Malle & Ullman), two blocks: "The therapist is…" | 7 + 9 | 0 (Not at all) – 7 (Very), plus *Does not fit* | see below |
+| **Willingness to use:** UTAUT behavioural intention (Venkatesh et al., 2003) | 3 | 1–7 agree | `willingness_to_use_mean` |
+| Empathy: CARE measure (Mercer et al., 2004), items 1–8 | 8 | 1 (Poor) – 5 (Excellent), plus *Does not apply* | `care_total` (8–40) |
+| Comfort and disclosure (study-specific) + attention check | 4 + 1 | 1–7 agree; `dc_4` reversed | `disclosure_comfort_mean`, `attention_check_passed` |
+| Godspeed Anthropomorphism (Bartneck et al., 2009) | 5 | 1–5 semantic differential | `godspeed_anthropomorphism_mean` |
+| Which counselor did you speak with? (manipulation check) | 1 | human / social robot / mechanical robot / unsure | `mc_correct` |
+| Comment | optional | free text, up to 2000 characters | — |
+
+**MDMT words used (16 of the original 20):**
+
+| Dimension | Words | Factor |
+|-----------|-------|--------|
+| Reliable | reliable, predictable, dependable, consistent | Performance trust |
+| Competent | competent, skilled, capable, meticulous | Performance trust |
+| Ethical | ethical, moral, integrous | Moral trust |
+| Sincere | sincere, truthful, genuine | Moral trust |
+| Benevolent | kind, considerate | Moral trust |
+
+* `mdmt_<dimension>_mean` is the mean of that dimension's words (*Does not fit* is left out).
+* `mdmt_performance_trust` is the mean of Reliable and Competent; both are required.
+* `mdmt_moral_trust` is the mean of Ethical, Sincere and Benevolent; at least two are required.
+* `mdmt_total_trust` is the mean of the two factors, and `mdmt_na_count` counts the *Does not fit* answers.
+
+**Scoring rules**
+* **CARE:** up to 2 *Does not apply* answers are replaced by the mean of the other items.
+  With more than 2, `care_total` is left empty.
+* **Attention check:** "please select *Somewhat disagree*" (value 3).
+* **Manipulation check:** correct answers are human → `human`, Furhat → `social_robot`,
+  Peerbot → `mechanical_robot`.
+
+---
+
+## The conversation
+
+A scripted, branching check-in in six stages, shown in a progress bar above the counselor:
+
+| Stage | Node | Question shown on screen | Next |
+|-------|------|--------------------------|------|
+| 1 Check-in | `n1_opening` | How have you been feeling over the past couple of weeks? | `n2_stressor` |
+| 2 What's on your mind | `n2_stressor` | What has been weighing on you most lately? | `n3_coping` |
+| 3 Coping | `n3_coping` | When stress shows up, what do you tend to do? | `n4_support` |
+| 4 Support | `n4_support` | When things get difficult, how supported do you feel? | `n5_goals`, or `n4b_connection` after "I often feel like i don't have anyone to talk to" |
+| 4 Support | `n4b_connection` | What makes it hardest to connect with other people? | `n5_goals` |
+| 5 Goals | `n5_goals` | What would you most want to get out of future conversations? | `n6_wrapup` |
+| 6 Wrap-up | `n6_wrapup` | Does that feel like a fair summary of our conversation? | end |
+
+The counselor's spoken line for each node (`prompt` in the dialogue tree) is longer than
+the on-screen question and is what the clip must contain.
+
+Every question has three answers, and every answer has its own short spoken reply, so
+there are 7 question clips + 21 reply clips = 28 clips per counselor. Participants answer
+6 questions, or 7 if they get the follow-up.
+
+**How a question plays:**
+1. The question video plays over the silent idle loop.
+2. When it ends, the answer buttons appear.
+3. The participant clicks one, and the answer is saved immediately.
+4. The reply video for that answer plays.
+5. The next question starts.
+
+Clips cannot be paused or replayed.
+
+**Reaction time.** All videos are downloaded into memory before the conversation starts,
+so playback never waits on the network. The answer buttons are enabled only once they
+have actually been drawn on screen; `choice_latency_ms` runs from that moment to the
+click (`pointerdown_latency_ms` measures to the press). These are saved as quality flags:
+- `tab_hidden_during_choice`;
+- `input_modality` (mouse, touch, pen or keyboard);
+- `audio_watchdog_fired` (a clip never reported that it ended);
+- `audio_simulated`.
+
+---
+
+## Videos and recording
+
+```
+static/video/<human|furhat|peerbot>/<clip_id>.mp4   28 clips, picture and sound in one file
+static/video/<human|furhat|peerbot>/idle.mp4        10–20 s silent "listening" loop
+```
+
+* **Clip names** follow the dialogue node ids: `n1_opening.mp4` is the question, and
+  `n1_opening_r0.mp4` … `_r2.mp4` are the replies to answers A–C.
+  `python3 tools/audio_assets.py script` writes `audio_script.csv` with every clip id, its
+  exact words and its file path for each condition. Use it as the recording script.
+* **Each clip carries its own sound.** There are no separate audio files. `idle.mp4`
+  always plays muted.
+* **Framing.** The counselor is shown in a square, and 16:9 footage is cropped to its
+  centre, so keep the face centred.
+* **Consistency.** Use the same framing, background and lead-in/tail for every clip and
+  every condition. Start and end `idle.mp4` in the same pose so the loop doesn't jump.
+
+**`tools/record_takes.py`** records one condition at a time through OBS Studio, then
+converts each take to web-ready MP4 (H.264/AAC, loudness normalised to −16 LUFS) under
+the right name. Raw takes are kept in `recordings/<condition>/`.
+
+```bash
+pip install obsws-python furhat-remote-api
+python3 tools/record_takes.py --condition furhat --backend furhat --dry-run   # show the plan
+python3 tools/record_takes.py --condition furhat --backend furhat             # drives the Furhat virtual robot
+python3 tools/record_takes.py --condition human --backend manual              # teleprompter for the actor
+python3 tools/record_takes.py --condition peerbot --backend manual
+python3 tools/record_takes.py --condition furhat --backend furhat --only n2_stressor,idle   # redo some
+```
+
+* **OBS:** enable *Tools → WebSocket Server Settings → Enable WebSocket server*, and pass
+  `--obs-password` or set `OBS_WS_PASSWORD`.
+* **Furhat:** run the Furhat SDK virtual robot with its Remote API skill (port 54321).
+  The script points its gaze at the camera, nods at the start of each reply and speaks
+  each line with Furhat's voice.
+* **After each take:** *Enter* keeps it, *p* plays it back, *r* redoes, *s* skips, *q*
+  quits. `--skip-existing` resumes an earlier session.
+
+After changing any spoken line in `static/js/task.js`, re-record that clip in all three
+conditions and regenerate `audio_script.csv`.
+
+---
+
+## Data
+
+The researcher console's export links, or `/lab/export/<name>.csv`, download three
+tables. Each row joins to psiTurk's participant table (`Therapy_Participant_Data`) on
+`uniqueid` (`workerId:assignmentId`).
+
+**`pretest.csv` (pretest_survey)**
+- Background: `age`, `gender` (+ `gender_self_describe`), `ethnicity` (comma-separated
+  codes, + `ethnicity_self_describe`), `prior_therapy`, `tech_familiarity`, `robot_exposure`.
+- Help-seeking: `atspph_1…10` (raw 0–3) and `atspph_total`.
+- Openness: `ai_counseling_openness`.
+- Robot anxiety: `ras_s1_1…3`, `ras_s3_1…4`, `ras_s1_mean`, `ras_s3_mean`, `ras_total_mean`.
+- Session: `consent_version`, `mode`, `submitted_at`.
+
+**`trials.csv` (branching_trial_log)**, one row per answered question:
+- Position: `run_id`, `condition`, `condition_label`, `trial_index`, `stage`, `node_id`,
+  `question_text`.
+- The answer: `selected_choice_index`, `choice_code`, `choice_text`, `next_node_id`,
+  `is_terminal`, `path_so_far`.
+- Timing: `choice_latency_ms`, `pointerdown_latency_ms`, `options_shown_epoch_ms`,
+  `prompt_audio_duration_ms`, `prompt_audio_onset_ms`.
+- The quality flags listed above, plus `client_timestamp` and `timestamp` (server, UTC).
+
+The condition saved is the one the server assigned, never what the browser reports.
+
+**`posttest.csv` (posttest_survey)**
+- Trust: the MDMT words `mdmt_<word>` (0–7, empty = *Does not fit*), the dimension means
+  and the trust factors.
+- `bi_1…3` and `willingness_to_use_mean`.
+- `care_1…8`, `care_total` and `care_na_count`.
+- `dc_1…4` and `disclosure_comfort_mean`.
+- `gs_anthro_1…5` and `godspeed_anthropomorphism_mean`.
+- `attention_check` / `attention_check_passed`, `mc_embodiment` / `mc_correct`, `comments`.
+
+**Leftover empty columns.** Some columns belong to items that were removed from the
+questionnaires and always stay empty: `ras_s2_*`, `mdmt_benevolent`, `mdmt_principled`,
+`mdmt_frank`, `mdmt_goodwill`, `care_9` and `care_10`. Ignore them.
+
+psiTurk's own data for each participant also records `condition_label`, `media_mode`, the
+answer path, start/finish times and the browser.
+
+**Suggested exclusions** (decide and pre-register them before collecting data):
+- `mode = debug`;
+- failed attention check;
+- failed manipulation check;
+- `audio_simulated` or `audio_watchdog_fired` trials.
+
+---
+
+## Where to edit things
+
+After any edit, restart the server (`psiturk server off`, then `psiturk server on`).
+
+| To change… | Edit |
+|------------|------|
+| Study title, institution, PI, contact email, duration, crisis lines | `STUDY_INFO` at the top of `custom.py` |
+| Consent wording | `templates/consent.html` (change `CONSENT_VERSION` in `custom.py` when you do) |
+| Study briefing | `templates/briefing.html`: one `<section>` per page; keep it the same for every condition |
+| Questionnaire wording, items, scales | `instruments.py` (renaming an item id needs a new database) |
+| What the counselor says, the questions, the answer buttons | the dialogue tree in `static/js/task.js`, between `BEGIN_DIALOGUE_TREE` and `END_DIALOGUE_TREE` (strict JSON), then re-record |
+| The conversation page (loading screen, sound check, stage bar) | `templates/exp.html` |
+| Debrief | `templates/complete.html` |
+| Colours, fonts, spacing | `static/css/style.css` |
+
+**If you add or rename a questionnaire item**, the server stops at start-up with a
+message, because the existing database lacks the new column. Move `participants.db`
+aside (`mv participants.db participants_old.db`) and start again; a new one is created.
+
+---
 
 ## Files
 
 ```
-custom.py               Blueprint: page routes, protocol gates, REST API, researcher console, CSV export
-models.py               PreTestSurvey, BranchingTrialLog, PostTestSurvey (on psiTurk's Base)
-instruments.py          All questionnaire items: drives rendering, validation and scoring
+custom.py               Page routes, page order checks, saving endpoints, researcher console, CSV export
+instruments.py          Every questionnaire item; display, validation and scoring
+models.py               Database tables: pretest_survey, branching_trial_log, posttest_survey
 templates/
-  layout.html           Shared shell (header, crisis-line footer)
-  macros.html           Likert-matrix and choice-question macros
+  layout.html           Shared page frame: header, progress steps, support footer
+  macros.html           Rating-grid and multiple-choice question templates
   consent.html          Informed consent
-  briefing.html         Study briefing (after consent, before the pre-test)
-  pretest.html          Pre-test survey
-  exp.html              Trial layout: preloader modal, avatar, visualiser, question card
-  posttest.html         Post-test survey
-  complete.html         Debrief + completion code
-  message.html          Generic notices (bad link, already participated, …)
+  briefing.html         Study briefing
+  pretest.html          "About you" questionnaire
+  exp.html              Conversation page
+  posttest.html         "Your impressions" questionnaire
+  complete.html         Debrief
+  message.html          Notices (incomplete link, already taken part, session not found)
   lab.html              Researcher console (/lab)
-static/js/task.js       Preloader, BranchingEngine, AudioPlayer, AvatarRenderer, Visualizer, DataCollector, Session
-static/js/survey.js     Shared survey form logic (per-page validation)
-static/js/pager.js      Splits long pages into screen-sized pages (no scrolling anywhere)
+  ad.html, error.html, … psiTurk's own pages (from the psiTurk project template; leave them)
+static/js/task.js       Conversation: dialogue tree, video loading, playback, timing, saving
+static/js/survey.js     Questionnaire pages: validation and submission
+static/js/pager.js      Splits pages into screen-sized steps (no scrolling)
 static/css/style.css    Styles
-tools/audio_assets.py   Exports the recording script; verifies audio/video files
-tools/record_takes.py   Records the video clips through OBS (drives the Furhat virtual robot, or teleprompter mode)
+static/lib/             jQuery, Underscore, Backbone (needed by psiTurk's psiturk.js)
+static/video/           The 87 counselor videos (Git LFS)
+tools/audio_assets.py   Writes audio_script.csv; checks that every video exists
+tools/record_takes.py   Records the clips through OBS (Furhat robot or teleprompter mode)
+audio_script.csv        Recording script generated from the dialogue tree
 ```
 
-## Installation
+Not in the repository (see `.gitignore`): `config.txt`, `participants.db`, `server.log`.
 
-Copy these files into your existing psiTurk project (the one that already has your
-`config.txt`). They replace the scaffold's `custom.py`, `templates/consent.html`,
-`templates/exp.html`, `templates/complete.html` and `static/js/task.js`. **Keep** the
-scaffold's `templates/error.html`, `closepopup.html`, `thanks-mturksubmit.html` and
-`static/lib/` — psiTurk requires them, and `exp.html` loads jQuery, Underscore and
-Backbone from `static/lib/` for `psiturk.js` (which psiTurk serves itself).
+---
 
-`config.txt` is not modified by this code, but it **must** contain:
+## Notes for the write-up
 
-```ini
-[Task Parameters]
-num_conds = 3
-num_counters = 1
-```
+Several validated scales were adapted for this study. Report them as adapted:
 
-At start-up `custom.py` logs an error if `num_conds` is not 3. If you want remote
-researcher access to `/lab`, also set `login_username` / `login_pw` under
-`[Server Parameters]`; otherwise `/lab` answers only to requests from localhost.
+* **RAS:** subscales S1 (communication capability) and S3 (discourse with robots) only.
+  S2 (behavioural characteristics: how the robot moves, how strong it is) was left out,
+  because participants only watch a video and never share a space with a physical robot.
+  It uses 7 points instead of the original 6. `ras_total_mean` averages 7 items, so it is
+  not comparable to an 11-item RAS total; compare the subscale scores instead.
+* **MDMT v2:**
+  * 16 of the 20 words are used; benevolent, principled, frank and has goodwill were
+    removed for readability.
+  * "Has integrity" is presented as "integrous" to fit "The therapist is…".
+  * Benevolence is scored from 2 words, so it is less reliable than the other dimensions.
+  * The authors ask users to email scsrc@brown.edu.
+* **UTAUT behavioural intention:** "the system" is replaced by "a counselor like this one",
+  with "If a counselor like this were available," added before each item and a 6-month
+  horizon.
+* **CARE:** items 1–8 of 10; "helping you to take control" and "making a plan of action"
+  were removed. The total runs from 8 to 40 rather than 10 to 50. © SW Mercer 2004: free
+  for non-commercial research, but check its terms.
+* **ATSPPH-SF:** some item wording is simplified (e.g. "psychological therapy" for
+  "psychotherapy"). Check it against your IRB-approved version.
+* **Disclosure comfort** (`dc_1…4`) is study-specific and not validated; report it as
+  exploratory.
+* **Godspeed Anthropomorphism** is asked last, as a graded check of how human-like each
+  counselor seemed, so it cannot prime the trust ratings.
 
-Edit `STUDY_INFO` at the top of `custom.py` (PI, IRB protocol, contact, compensation,
-crisis lines) before collecting data.
-
-The custom tables are created automatically on first start (psiTurk's `init_db()`).
-
-## Media assets
-
-The dialogue tree lives in `static/js/task.js` between `/* BEGIN_DIALOGUE_TREE */`
-and `/* END_DIALOGUE_TREE */` (strict JSON). It has 28 clips per condition (7
-prompts + 21 acknowledgments), about 680 words, ≈ 4.5 min of speech per voice.
-Each clip id is one file, in the format that condition's `media` setting asks for:
-
-```
-static/video/human/<clip_id>.mp4      + static/video/human/idle.mp4
-static/video/furhat/<clip_id>.mp4     + static/video/furhat/idle.mp4
-static/audio/peerbot/<clip_id>.mp4    (until Peerbot is switched to video)
-```
-
-```bash
-python tools/audio_assets.py script
-```
-
-writes `audio_script.csv` with every clip id, its transcript and the exact file
-path for each condition (`.mp4` for Human and Furhat, `.mp4` for Peerbot, and the
-`idle.mp4` row for the video conditions). It is the actor's script and the text
-for the Peerbot TTS; the Furhat takes read the same tree automatically (see
-[Recording the clips](#recording-the-clips)). Then:
-
-```bash
-python tools/audio_assets.py check
-```
-
-checks each condition in its own format and exits non-zero if any file is missing
-or empty. Normalise loudness across conditions (e.g. −16 LUFS) and trim leading
-silence so prompt onsets are comparable. For the video clips `record_takes.py`
-normalises loudness itself and gives every take the same `--preroll`; for the
-actor, start each line right after the recording starts so the lead-in matches.
-
-If a clip is missing at run time, the preloader lists every failed file and will
-not start. In **debug** mode only, a *Continue with simulated audio* button lets
-you pilot the flow without recordings: speech timing is simulated from the
-transcript length, captions are shown, and trials are flagged `audio_simulated`.
-
-To show a photograph or video still instead of a drawn avatar, set `portrait` for
-that condition in `CONDITIONS` in `task.js`; it is preloaded with the audio.
-
-## Video mode (recorded robots and actor)
-
-Each condition in `CONDITIONS` in `static/js/task.js` has `media: 'audio'` or
-`media: 'video'`. Human and Furhat are set to `'video'`; Peerbot is `'audio'`
-until you decide. In video mode the participant sees recorded footage instead of
-the drawn avatar:
-
-```
-static/video/<condition>/idle.mp4          silent "listening" loop, plays (muted, looping) the whole time
-static/video/<condition>/<clip_id>.mp4     the same 28 clip ids as the audio, picture and sound in one file
-```
-
-Each clip `.mp4` carries its own soundtrack: there is no separate `.mp4` for a
-video condition, and nothing under `static/audio/human/` or `static/audio/furhat/`
-is used. The sound is played from the video file itself (and drives the
-visualiser), so keep picture and sound in sync in the export. Only `idle.mp4`
-is silent; any sound in it is ignored.
-
-When a clip plays it is layered over the idle loop and appears on its first
-`playing` event; when it ends, the idle loop is visible again. Everything is
-preloaded into memory exactly like the audio (allow ~1 minute for large files),
-and the timing rules are unchanged: options appear on the clip's `ended` event.
-`prompt_audio_onset_ms` then measures video start-up (about 50 ms in testing,
-versus a few ms for audio); it does not affect `choice_latency_ms`, which is
-timed from when the options are painted. psiTurk's question data records
-`media_mode` for each participant.
-
-The stage is square and uses `object-fit: cover`, so 16:9 footage shows its
-centre square: keep the face centred. **Decide Peerbot before collecting real
-data.** While Human and Furhat are footage and Peerbot is a drawn robot, any
-Peerbot difference could come from the presentation format rather than the
-embodiment. Switching it is one word (`media: 'video'`) plus its files. In debug mode a missing video offers the
-same *simulated* fallback as audio, with the drawn avatar.
-
-### Recording the clips
-
-`tools/record_takes.py` records one condition at a time. It starts and stops
-OBS Studio for each take, then converts the take to web-ready H.264/AAC MP4
-(loudness normalised to −16 LUFS, the idle loop without sound) under the right
-name. Raw takes are kept in `recordings/<condition>/`.
-
-```bash
-pip install obsws-python furhat-remote-api
-sudo apt install ffmpeg
-python tools/record_takes.py --condition furhat --backend furhat --dry-run   # see the plan first
-python tools/record_takes.py --condition furhat --backend furhat
-python tools/record_takes.py --condition peerbot --backend manual
-python tools/record_takes.py --condition human --backend manual
-python tools/record_takes.py --condition furhat --backend furhat --only n2_stressor,idle   # redo some
-python tools/audio_assets.py check            # each condition in its own format
-```
-
-* **OBS:** enable *Tools → WebSocket Server Settings → Enable WebSocket server*
-  (pass `--obs-password`, or set `OBS_WS_PASSWORD`). Use a Window Capture of just
-  the robot, plus desktop audio, on a canvas with the subject centred.
-* **`--backend furhat`:** start the virtual robot from the Furhat SDK with its
-  Remote API skill running (port 54321). For every take the script makes Furhat
-  look into the camera (`--gaze`), nods at the start of each reply
-  (`--response-gesture`, empty for none; `--prompt-gesture` for questions) and
-  speaks the line with its TTS (`--voice` to choose the voice). Unknown gesture
-  names are reported and skipped. The idle take is 15 s (`--idle-seconds`) of
-  the robot's own idle behaviour.
-* **`--backend manual`:** teleprompter mode for anything the script cannot drive.
-  Press Enter to start recording, perform the line (or trigger the Peerbot from
-  its own SDK), then press Enter to stop. For the human condition, film the actor
-  against the same neutral background, with the same framing, lead-in and tail.
-* After each take: *Enter* keeps it, *p* plays it, *r* redoes, *s* skips,
-  *q* quits. `--auto` keeps every take; `--skip-existing` resumes a session.
-* `--preroll` / `--postroll` (0.5 s / 0.6 s) add still frames around each line.
-  Keep them the same for every condition, because the tail delays when the
-  options appear.
-* If the Peerbot SDK turns out to be scriptable, add a backend class with
-  `setup()` and `perform(take)` next to `FurhatBackend` and register it in `BACKENDS`.
-
-## Running sessions in the lab (no AMT / Prolific)
-
-1. Start the server: `psiturk server on` (Linux/macOS). psiTurk's gunicorn launcher
-   does not run on Windows; there, start Flask directly from the project folder:
-   `python -c "from psiturk.experiment import app; app.run(host='127.0.0.1', port=22362, threaded=True)"`.
-2. Open `http://localhost:22362/lab`, enter a participant code, choose **Live** or
-   **Practice/pilot**, click *Start*, and hand over the workstation.
-3. `/lab` shows started / completed counts per condition and links to CSV exports
-   of the three custom tables (`/lab/export/pretest.csv`, `trials.csv`,
-   `posttest.csv`).
-
-Practice runs get a `debug-` prefix on their ids. psiTurk treats those as debug
-sessions (restartable, never flagged as quitters), and they are stored with
-`mode = debug` so you can exclude them. In live mode psiTurk marks the participant
-STARTED when the conversation begins, so a reload of `/exp` is refused, and
-re-using a participant code under a new session id is blocked.
-
-## Reaction-time methodology
-
-* **Preloading.** Each clip is downloaded to a `Blob`, wrapped in an object URL and
-  played by an `HTMLAudioElement` awaited to `canplaythrough`. Playback never touches
-  the network. `prompt_audio_onset_ms` (from `play()` to the `playing` event) is
-  logged per trial so you can confirm this; expect a few ms.
-* **Options shown.** Buttons are inserted disabled; `t_options_shown` is taken in the
-  second `requestAnimationFrame` after insertion (after the frame containing them
-  has painted), and only then are they enabled. Latency can't be negative and isn't
-  inflated by layout time. If the tab is not being painted (hidden, minimised), the
-  options stay locked until it is.
-* **Click.** `choice_latency_ms = click.timeStamp − t_options_shown`, both on the
-  `performance.now()` clock. `pointerdown_latency_ms` (press rather than release) is
-  stored too. Browser timer resolution is about 0.1 ms in Chrome and 1 ms in Firefox.
-* **Quality flags.** `tab_hidden_during_choice`, `input_modality`,
-  `audio_watchdog_fired` (the `ended` event never arrived), `audio_simulated`.
-
-## Data dictionary (custom tables)
-
-All tables join to psiTurk's `assignments` table on `uniqueid` (`workerId:assignmentId`).
-
-**pretest_survey** — `age`, `gender` (+`_self_describe`), `ethnicity` (comma-separated
-codes, +`_self_describe`), `prior_therapy` (yes/no/prefer_not), `tech_familiarity`,
-`robot_exposure`, `ras_s1_1…ras_s3_4`, `ras_s1_mean`, `ras_s2_mean`, `ras_s3_mean`,
-`ras_total_mean` (baseline robot anxiety), `atspph_1…atspph_10` (raw 0–3) →
-`atspph_total` (0–30, items 2/4/8/9/10 reversed), `ai_counseling_openness` (1–7),
-`consent_version`, `mode`, `submitted_at`.
-
-**branching_trial_log** — `run_id` (one per page load), `condition`, `condition_label`,
-`trial_index`, `stage` (1–6), `node_id`, `question_text`, `selected_choice_index`,
-`choice_code`, `choice_text`, `next_node_id` (NULL at the end), `is_terminal`,
-`path_so_far`, `choice_latency_ms`, `pointerdown_latency_ms`, `options_shown_epoch_ms`,
-`prompt_audio_duration_ms`, `prompt_audio_onset_ms`, the quality flags above,
-`client_timestamp`, `timestamp` (server UTC). The condition stored is the server's
-assignment, never the browser's.
-
-**posttest_survey**
-* **Trust (primary)** — 20 MDMT v2 items `mdmt_<word>` (0–7, NULL = “Does not fit”) →
-  subscales `mdmt_reliable_mean`, `mdmt_competent_mean`, `mdmt_ethical_mean`,
-  `mdmt_sincere_mean`, `mdmt_benevolent_mean` → **`mdmt_performance_trust`** (Reliable +
-  Competent, both required), **`mdmt_moral_trust`** (Ethical + Sincere + Benevolent, at
-  least two required), `mdmt_total_trust` (both factors required), `mdmt_na_count`.
-  Factors are means of subscale scores, as the scale sheet specifies.
-* **Willingness to use (primary)** — `bi_1…bi_3` (1–7) → **`willingness_to_use_mean`**.
-* **Perceived empathy** — `care_1…care_10` (1–5, NULL = “Does not apply”) →
-  `care_total` (10–50; NULL when more than two items are N/A), `care_na_count`.
-* **Disclosure comfort (exploratory)** — `dc_1…dc_4` (`dc_4` reversed) →
-  `disclosure_comfort_mean`.
-* **Godspeed Anthropomorphism** — `gs_anthro_1…5` (1–5) → `godspeed_anthropomorphism_mean`.
-* **Checks** — `attention_check` / `attention_check_passed`, `mc_embodiment` /
-  `mc_correct`; `comments`.
-
-All scores are computed on the server from the raw items. Because the columns changed,
-a `participants.db` created by an earlier version is refused at start-up with
-instructions to move it aside.
-
-## Instrument notes
-
-* **RAS** (Nomura, Kanda, Suzuki & Kato, 2006/2008): the original uses a 6-point
-  format; this study uses 7 points as specified. The item wording is an English
-  rendering, so check it against the version approved by your IRB.
-* **ATSPPH-SF** (Fischer & Farina, 1995): 10 items, 0–3, summed. Check the wording
-  against the 1995 article.
-* **MDMT v2** (Malle & Ullman, 2021, 2023; scale sheet 2025-09-01 at
-  research.clps.brown.edu/SocCogSci/Measures): 0–7 plus “Does not fit”, presented in
-  the authors’ two balanced 10-item blocks. The authors ask users to email
-  scsrc@brown.edu.
-* **Behavioural intention** (Venkatesh et al., 2003, UTAUT): the three BI items with
-  “a counselor like this one” and a 6-month horizon.
-* **CARE** (Mercer et al., 2004): © SW Mercer; free for non-commercial use, but check
-  its terms. Descriptions adapted for a counselor (no doctor-specific wording).
-* **Godspeed Anthropomorphism** (Bartneck et al., 2009): used as a graded
-  manipulation check, asked last so it cannot prime the trust ratings.
-* Disclosure comfort (`dc_*`) is study-specific and not validated: report it as exploratory.
-* Post-test wording is identical across conditions; the template never receives
-  the condition.
-
-## Ethics notes
-
-* The crisis line (988, US) appears in the footer of every page, the same for all conditions.
-* The debrief explains that the conversation was pre-recorded and scripted, with no
-  live listener. Review it against your protocol if your design uses deception
-  about the human condition.
-* No audio or video of the participant is recorded (OBS is used only to record the
-  stimuli, never during sessions).
+**Ethics**
+* The study is presented as a research simulation, not therapy, on the consent form, the
+  briefing and the debrief.
+* No audio, video or image of the participant is recorded. OBS is used only to record
+  the counselor clips.
+* Withholding the conditions and hypotheses until the debrief is a form of incomplete
+  disclosure, and the debrief explains them.
+* Participants may withdraw at any time by closing the window; per the consent form,
+  their data is then not used.
