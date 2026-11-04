@@ -8,9 +8,9 @@ clinical-intake script:
 |---------------------|-----------|----------------------------------------------|--------------------------------------|
 | 0                   | `human`   | Human therapist (filmed actor)               | `static/video/human/*.mp4`           |
 | 1                   | `furhat`  | Furhat social robot (Furhat SDK, recorded)   | `static/video/furhat/*.mp4`          |
-| 2                   | `peerbot` | Mechanical, Peerbot-style robot (robotic TTS)| `static/audio/peerbot/*.mp3` for now |
+| 2                   | `peerbot` | Mechanical, Peerbot-style robot (robotic TTS)| `static/audio/peerbot/*.mp4` for now |
 
-Peerbot's format is not decided yet. It plays `.mp3` audio with the drawn robot
+Peerbot's format is not decided yet. It plays `.mp4` audio with the drawn robot
 until its footage exists; then set its `media` to `'video'` in `CONDITIONS` in
 `static/js/task.js` and put the `.mp4` files in `static/video/peerbot/`
 (see [Video mode](#video-mode-recorded-robots-and-actor)).
@@ -145,7 +145,7 @@ Each clip id is one file, in the format that condition's `media` setting asks fo
 ```
 static/video/human/<clip_id>.mp4      + static/video/human/idle.mp4
 static/video/furhat/<clip_id>.mp4     + static/video/furhat/idle.mp4
-static/audio/peerbot/<clip_id>.mp3    (until Peerbot is switched to video)
+static/audio/peerbot/<clip_id>.mp4    (until Peerbot is switched to video)
 ```
 
 ```bash
@@ -153,7 +153,7 @@ python tools/audio_assets.py script
 ```
 
 writes `audio_script.csv` with every clip id, its transcript and the exact file
-path for each condition (`.mp4` for Human and Furhat, `.mp3` for Peerbot, and the
+path for each condition (`.mp4` for Human and Furhat, `.mp4` for Peerbot, and the
 `idle.mp4` row for the video conditions). It is the actor's script and the text
 for the Peerbot TTS; the Furhat takes read the same tree automatically (see
 [Recording the clips](#recording-the-clips)). Then:
@@ -188,7 +188,7 @@ static/video/<condition>/idle.mp4          silent "listening" loop, plays (muted
 static/video/<condition>/<clip_id>.mp4     the same 28 clip ids as the audio, picture and sound in one file
 ```
 
-Each clip `.mp4` carries its own soundtrack: there is no separate `.mp3` for a
+Each clip `.mp4` carries its own soundtrack: there is no separate `.mp4` for a
 video condition, and nothing under `static/audio/human/` or `static/audio/furhat/`
 is used. The sound is played from the video file itself (and drives the
 visualiser), so keep picture and sound in sync in the export. Only `idle.mp4`
