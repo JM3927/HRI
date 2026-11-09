@@ -173,11 +173,43 @@ code { font-size: .9em; background: var(--surface-2); padding: .1em .35em; borde
 .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 24px; margin: 16px 0 0; }
 .meta-grid dt { font-size: .75rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
 .meta-grid dd { margin: 2px 0 0; font-weight: 500; }
-.consent-body { border-top: 1px solid var(--line); }
-.consent-body section { padding: 16px 0 4px; }
-.consent-body h2 { font-size: 1rem; }
-.consent-body ol, .consent-body ul { padding-left: 1.3em; margin: 0 0 1em; }
-.consent-form h2 { font-size: 1.05rem; }
+/* One-page consent: the whole sheet is one pager unit (never split); pager.js
+   shrinks the text if a small window cannot hold it. */
+.consent-page .page { max-width: 1280px; }
+.consent-page .consent { margin: auto 0; }  /* hugs its content, centred in the window */
+.consent-sheet { display: flex; flex-direction: column; gap: 18px; }
+.consent-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 32px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--line);
+}
+.consent-head h1 { margin: 0; font-size: 1.45rem; }
+.consent-title { flex: 1 1 340px; }
+.consent-head .meta-grid { flex: 0 1 auto; margin: 0; grid-template-columns: repeat(3, auto); gap: 6px 28px; }
+.consent-facts { columns: 3 260px; column-gap: 32px; font-size: .94rem; line-height: 1.5; color: var(--ink-2); }
+/* Sections may continue into the next column (so the columns balance), but a
+   heading always stays with its text and no paragraph or list item is split. */
+.consent-facts section { padding: 0 0 0 14px; margin: 0 0 14px; border-left: 3px solid var(--accent-soft); }
+.consent-facts h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--accent); margin: 0 0 .3em; break-after: avoid; }
+.consent-facts p, .consent-facts li { break-inside: avoid; }
+.consent-facts p { margin: 0 0 .45em; }
+.consent-facts p:last-child { margin-bottom: 0; }
+.consent-facts ol { padding-left: 1.25em; margin: 0 0 .45em; }
+.consent-facts li { margin-bottom: .2em; }
+.consent-facts strong { color: var(--ink); }
+.consent-form { padding: 12px 18px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.consent-form h2 { font-size: 1rem; margin: 0 0 2px; }
+.consent-checks { display: grid; grid-template-columns: auto 1fr; gap: 0 32px; }
+.consent-checks .check { padding: 5px 0; }
+.consent-page .pager-nav .consent-print { margin-right: auto; }
+@media (max-height: 760px) {
+  .consent-sheet { gap: 12px; }
+  .consent-head { padding-bottom: 10px; }
+  .consent-facts section { margin-bottom: 10px; }
+}
+@media (max-width: 720px) {
+  .consent-checks { grid-template-columns: 1fr; }
+  .consent-head .meta-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+}
 
 /* ----------------------------------------------------------------- briefing */
 .brief-section h2 { font-size: 1.2rem; margin-bottom: .2em; }
@@ -231,6 +263,7 @@ code { font-size: .9em; background: var(--surface-2); padding: .1em .35em; borde
   .pager-off { display: revert !important; }
   .pager-nav { display: none !important; }
   .consent-body { border: 0; }
+  .consent-facts { columns: 2; }
   .card { box-shadow: none; border: 0; }
 }
 
@@ -238,6 +271,9 @@ code { font-size: .9em; background: var(--surface-2); padding: .1em .35em; borde
 .survey-block { border: 0; padding: 0; margin: 0 0 36px; min-width: 0; }
 .survey-block-title { font-size: 1.15rem; font-weight: 700; padding: 0; margin-bottom: 6px; }
 .block-instructions { color: var(--ink-2); margin-bottom: 14px; }
+.block-instructions p { margin: 0 0 .55em; }
+.block-instructions p:last-child { margin-bottom: 0; }
+.likert-sd-stem { font-weight: 600; margin: 0 0 10px; }
 
 .question { border: 0; padding: 10px 16px; margin: 0 -16px 4px; border-radius: var(--radius-sm); min-width: 0; }
 .question-label { display: block; font-weight: 600; margin-bottom: 8px; padding: 0; }
@@ -292,7 +328,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .likert-stem { font-size: .85rem; font-weight: 600; color: var(--ink-2); }
 .likert-item-help { display: block; margin-top: 2px; font-size: .8rem; color: var(--ink-3); line-height: 1.35; }
 /* Semantic differential (Godspeed): low anchor | scale points | high anchor. */
-.likert-semantic { --label-col: minmax(110px, 1fr); }
+.likert-semantic { --label-col: minmax(150px, 1.7fr); }
 .likert-semantic .likert-row { grid-template-columns: var(--label-col) repeat(var(--points), minmax(40px, 1fr)) var(--label-col); }
 .likert-semantic .sd-left { text-align: right; }
 .likert-semantic .sd-right { text-align: left; }

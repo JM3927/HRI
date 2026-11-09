@@ -68,11 +68,17 @@
     if (this.back) this.back.addEventListener('click', function () { self.go(self.pageIndex - 1); });
     if (this.next) this.next.addEventListener('click', function () { self.goNext(); });
 
-    // Enter in a single-line field moves to the next page instead of submitting early.
+    // Enter in a form field (text box, radio button, checkbox, list) acts like
+    // "Next" until the last page. Without this the browser treats Enter as
+    // submitting the whole form, which flags every unanswered question red,
+    // including those on pages not reached yet. Buttons, links and multi-line
+    // text boxes keep their usual Enter behaviour.
     root.addEventListener('keydown', function (ev) {
       var t = ev.target;
-      if (ev.key !== 'Enter' || self.isLast()) return;
-      if (t.tagName === 'INPUT' && t.type !== 'checkbox' && t.type !== 'radio') {
+      if (ev.key !== 'Enter' || ev.isComposing || self.isLast()) return;
+      var field = (t.tagName === 'INPUT' && !/^(submit|button|reset|image)$/.test(t.type)) ||
+                  t.tagName === 'SELECT';
+      if (field) {
         ev.preventDefault();
         self.goNext();
       }
@@ -226,11 +232,16 @@
       if (page.length !== 1) return;
       var unit = page[0];
       self.setVisible(page);
-      for (var i = 0; i < 4 && !self.fits(); i++) {
-        var current = parseFloat(unit.style.zoom) || 1;
-        var ratio = self.body.clientHeight / self.body.scrollHeight;
-        unit.style.zoom = String(Math.floor(current * ratio * 100) / 100);
+      if (self.fits()) return;
+      // Largest zoom that fits, by bisection: zooming out can re-flow the unit
+      // (e.g. more columns), so the needed zoom is not simply height ratio.
+      var lo = 0.3, hi = 1, best = lo;
+      for (var i = 0; i < 8; i++) {
+        var mid = (lo + hi) / 2;
+        unit.style.zoom = String(mid);
+        if (self.fits()) { best = mid; lo = mid; } else { hi = mid; }
       }
+      unit.style.zoom = String(Math.floor(best * 100) / 100);
       if (!self.fits()) console.warn('pager: content does not fit even when zoomed out', unit);
     });
   };

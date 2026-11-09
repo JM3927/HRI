@@ -135,6 +135,9 @@
 
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
+      // A submit before the last page (e.g. Enter pressed somewhere) only means
+      // "Next": check this page, never flag questions on later pages.
+      if (pager && !pager.isLast()) { pager.goNext(); return; }
       attempted = true;
       var state = refresh();
       errorBox.hidden = true;

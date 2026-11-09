@@ -22,9 +22,15 @@ Pre-test
 * Robot Anxiety Scale (RAS): Nomura, Kanda, Suzuki & Kato (2006/2008).
   11 items, 3 subscales. The original uses a 6-point format; this study uses
   7 points. Item wording is an English rendering.
-* ATSPPH-SF, Attitudes Toward Seeking Professional Psychological Help — Short
-  Form: Fischer & Farina (1995). 10 items, 0–3 (Disagree … Agree); items 2, 4,
-  8, 9, 10 are reverse-scored; total = sum, 0–30 (higher = more positive).
+* MHSAS, Mental Help Seeking Attitudes Scale: Hammer, Parent & Spiker (2018),
+  recommended 2026 version (Hammer, Dueber, Toland & Weng, 2026), © J. H. Hammer.
+  Official page and permission form:
+  https://drjosephhammer.com/research/mental-help-seeking-attitudes-scale/
+  Questionnaire instructions with a hypothetical mental-health-concern vignette,
+  then 9 semantic-differential items, 1–6, positive word always on the right.
+  No reverse scoring; score = mean of the 9 items (1–6, higher = more positive
+  attitude toward seeking help). Wording below is verbatim from the 2026 form;
+  do not reword it, and do not show the scale's name to participants.
 Post-test
 * MDMT v2, Multi-Dimensional Measure of Trust: Malle & Ullman (2021, 2023),
   scale sheet 2025-09-01 (research.clps.brown.edu/SocCogSci/Measures). 20
@@ -50,7 +56,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import mean
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 
 # --------------------------------------------------------------------------- #
@@ -74,7 +80,7 @@ class LikertBlock:
     """A matrix of Likert items sharing one response scale."""
     id: str
     title: str
-    instructions: str
+    instructions: Union[str, Sequence[str]]   # one paragraph, or several
     labels: Sequence[str]            # one label per scale point, low → high
     items: Sequence[Item]
     scale_min: int = 1
@@ -122,7 +128,6 @@ ANXIETY_7 = (
     "Quite anxious", "Very anxious", "Extremely anxious",
 )
 
-AGREE_4 = ("Disagree", "Partly disagree", "Partly agree", "Agree")          # ATSPPH-SF, 0–3
 
 MDMT_8 = ("Not at all", "", "", "", "", "", "", "Very")                      # MDMT v2, 0–7
 
@@ -173,32 +178,35 @@ TECH_BLOCK = LikertBlock(
     ),
 )
 
-ATSPPH_BLOCK = LikertBlock(
-    id="atspph",
-    title="Attitudes toward counseling",
-    instructions="Please indicate how much you agree or disagree with each statement.",
-    labels=AGREE_4,
-    scale_min=0,
+# MHSAS 2026 version, verbatim. The instructions (incl. the vignette) are shown
+# before the items and repeated on every page the block continues onto.
+MHSAS_BLOCK = LikertBlock(
+    id="mhsas",
+    title="Seeking help",
+    instructions=(
+        "For the purposes of this questionnaire, “mental health professionals” include psychologists, "
+        "psychiatrists, clinical social workers, and mental health therapists and counselors.",
+        "As you answer the questions in this questionnaire, we would like you to imagine something.",
+        "Imagine that you have been experiencing a serious mental health concern for the last month. "
+        "You feel significantly more nervous, restless, hopeless, and isolated, and are having trouble "
+        "sleeping and concentrating on your work.",
+        "We’re going to ask you some questions about how you—given your personal views and experiences "
+        "to date—might feel about seeking help from a mental health professional if you were dealing "
+        "with this hypothetical mental health concern right now.",
+    ),
+    stem="My seeking help from a mental health professional in the next 3 months would be...",
+    labels=("", "", "", "", "", ""),
+    semantic=True,
     items=(
-        Item("atspph_1", "If I thought I was having a mental breakdown, my first thought would be "
-                         "to get professional attention.", "atspph"),
-        Item("atspph_2", "If I had emotional conflicts, I would not got to a "
-                         "psychologist.", "atspph", reverse=True),
-        Item("atspph_3", "If I were experiencing a serious emotional crisis at this point in my life, I "
-                         "would be confident that psychological therapy would help.", "atspph"),
-        Item("atspph_4", "I think that people who deal with their own conflicts or " 			"fears without going to professional help are more admirable."
-             "atspph", reverse=True),
-        Item("atspph_5", "I would want to get psychological help if I were worried or upset for a long "
-                         "period of time.", "atspph"),
-        Item("atspph_6", "I might want to have psychological counseling in the future.", "atspph"),
-        Item("atspph_7", "A person with an emotional problem is not likely to solve it alone. They are more "
-                         "likely to solve it with professional help.", "atspph"),
-        Item("atspph_8", "Psychological therapy does not seem worth it, given the time "
-                         "and money put into it.", "atspph", reverse=True),
-        Item("atspph_9", "A person should work out his or her own problems, and getting psychological "
-                         "counseling should be a last resort.", "atspph", reverse=True),
-        Item("atspph_10", "Personal and emotional troubles, like many things, tend to work out by "
-                          "themselves.", "atspph", reverse=True),
+        Item("mhsas_1", left="Very useless", right="Very useful", subscale="mhsas"),
+        Item("mhsas_2", left="Very unimportant", right="Very important", subscale="mhsas"),
+        Item("mhsas_3", left="Very unhealthy", right="Very healthy", subscale="mhsas"),
+        Item("mhsas_4", left="Very ineffective", right="Very effective", subscale="mhsas"),
+        Item("mhsas_5", left="Very bad", right="Very good", subscale="mhsas"),
+        Item("mhsas_6", left="Very hurting", right="Very healing", subscale="mhsas"),
+        Item("mhsas_7", left="Very disempowering", right="Very empowering", subscale="mhsas"),
+        Item("mhsas_8", left="Very unsatisfying", right="Very satisfying", subscale="mhsas"),
+        Item("mhsas_9", left="Very undesirable", right="Very desirable", subscale="mhsas"),
     ),
 )
 
@@ -238,7 +246,7 @@ RAS_BLOCK = LikertBlock(
 PRETEST_CHOICES = (GENDER, PRIOR_THERAPY)
 # Counseling attitudes come before the robot items so the general measures are
 # answered before robots are mentioned.
-PRETEST_BLOCKS = (TECH_BLOCK, ATSPPH_BLOCK, AI_OPENNESS_BLOCK, RAS_BLOCK)
+PRETEST_BLOCKS = (TECH_BLOCK, MHSAS_BLOCK, AI_OPENNESS_BLOCK, RAS_BLOCK)
 
 
 # --------------------------------------------------------------------------- #
@@ -535,8 +543,8 @@ def score_pretest(responses) -> Tuple[dict, List[str]]:
         row["ras_s3_mean"] = _scored(RAS_BLOCK, row, "s3")
         # Baseline robot anxiety score = mean of all 11 RAS items.
         row["ras_total_mean"] = _mean_or_none([row[i.id] for i in RAS_BLOCK.items])
-        # ATSPPH-SF is conventionally reported as a sum (0–30).
-        row["atspph_total"] = sum(_scored_values((ATSPPH_BLOCK,), row, "atspph"))
+        # MHSAS: mean of the 9 items (every item is required, so all 9 are present).
+        row["mhsas_mean"] = _scored(MHSAS_BLOCK, row, "mhsas")
     return row, errors
 
 

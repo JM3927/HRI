@@ -8,7 +8,10 @@
   A matrix of Likert items that share one response scale.
   block.semantic: each row is a word pair (Godspeed) — the low anchor sits in
   the label column and the high anchor in an extra column on the right.
-  block.stem: lead-in shown over the item column ("The therapist …").
+  block.stem: lead-in shown over the item column ("The therapist …"); for a
+  semantic block it is shown as a sentence above the matrix instead (MHSAS).
+  block.instructions: one paragraph (repeated on each page of the block), or a
+  list of paragraphs (shown once, at the start).
   item.help: smaller explanatory line under the item text (CARE).
   Paging (static/js/pager.js): the fieldset is a group box, each item row a
   unit, so a long block continues on the next page with its title, instructions
@@ -17,7 +20,11 @@
 {% macro likert_block(block) %}
 <fieldset class="survey-block" data-block="{{ block.id }}" data-pager-group>
   <legend class="survey-block-title">{{ block.title }}</legend>
-  {% if block.instructions %}<p class="block-instructions">{{ block.instructions }}</p>{% endif %}
+  {% if block.instructions is string %}<p class="block-instructions">{{ block.instructions }}</p>
+  {# Several paragraphs (MHSAS scenario): one unit, shown once at the start of the
+     block rather than repeated on every page the block continues onto. #}
+  {% elif block.instructions %}<div class="block-instructions" data-unit>{% for para in block.instructions %}<p>{{ para }}</p>{% endfor %}</div>{% endif %}
+  {% if block.semantic and block.stem %}<p class="likert-sd-stem">{{ block.stem }}</p>{% endif %}
 
   {# Compact legend, shown only on narrow screens where column headers are hidden. #}
   <p class="likert-legend">
@@ -31,7 +38,7 @@
 
   <div class="likert{% if block.semantic %} likert-semantic{% endif %}" style="--points: {{ block.points|length + (1 if block.allow_na else 0) }}">
     <div class="likert-row likert-head" aria-hidden="true">
-      <span class="likert-item-label likert-stem">{{ block.stem }}</span>
+      <span class="likert-item-label likert-stem">{% if not block.semantic %}{{ block.stem }}{% endif %}</span>
       {% for p in block.points %}
       <span class="likert-col">
         <span class="likert-num">{{ p }}</span>

@@ -52,7 +52,7 @@ class _SerializableMixin:
 # --------------------------------------------------------------------------- #
 
 class PreTestSurvey(_SerializableMixin, Base):
-    """Demographics, prior experience, help-seeking attitudes (ATSPPH-SF), Robot Anxiety Scale."""
+    """Demographics, prior experience, help-seeking attitudes (MHSAS), Robot Anxiety Scale."""
 
     __tablename__ = "pretest_survey"
 
@@ -93,20 +93,18 @@ class PreTestSurvey(_SerializableMixin, Base):
     ras_s3_mean = Column(Float, nullable=True)
     ras_total_mean = Column(Float, nullable=True, doc="Baseline robot anxiety score (mean of 11 items)")
 
-    # Attitudes Toward Seeking Professional Psychological Help, short form
-    # (Fischer & Farina, 1995). Raw answers 0–3; items 2, 4, 8, 9, 10 are
-    # reverse-scored in atspph_total only.
-    atspph_1 = _likert("ATSPPH-SF 0–3")
-    atspph_2 = _likert("ATSPPH-SF 0–3 (reverse-scored in total)")
-    atspph_3 = _likert("ATSPPH-SF 0–3")
-    atspph_4 = _likert("ATSPPH-SF 0–3 (reverse-scored in total)")
-    atspph_5 = _likert("ATSPPH-SF 0–3")
-    atspph_6 = _likert("ATSPPH-SF 0–3")
-    atspph_7 = _likert("ATSPPH-SF 0–3")
-    atspph_8 = _likert("ATSPPH-SF 0–3 (reverse-scored in total)")
-    atspph_9 = _likert("ATSPPH-SF 0–3 (reverse-scored in total)")
-    atspph_10 = _likert("ATSPPH-SF 0–3 (reverse-scored in total)")
-    atspph_total = Column(Integer, nullable=True, doc="ATSPPH-SF sum 0–30 (higher = more positive)")
+    # Mental Help Seeking Attitudes Scale, 2026 version (Hammer et al.). Raw
+    # answers 1–6 (positive word on the right); no reverse scoring.
+    mhsas_1 = _likert("MHSAS 1–6 useless–useful")
+    mhsas_2 = _likert("MHSAS 1–6 unimportant–important")
+    mhsas_3 = _likert("MHSAS 1–6 unhealthy–healthy")
+    mhsas_4 = _likert("MHSAS 1–6 ineffective–effective")
+    mhsas_5 = _likert("MHSAS 1–6 bad–good")
+    mhsas_6 = _likert("MHSAS 1–6 hurting–healing")
+    mhsas_7 = _likert("MHSAS 1–6 disempowering–empowering")
+    mhsas_8 = _likert("MHSAS 1–6 unsatisfying–satisfying")
+    mhsas_9 = _likert("MHSAS 1–6 undesirable–desirable")
+    mhsas_mean = Column(Float, nullable=True, doc="MHSAS mean 1–6 (higher = more positive help-seeking attitude)")
     ai_counseling_openness = _likert("1–7 openness to AI / robotic counseling (single item)")
 
     # Provenance

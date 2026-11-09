@@ -51,7 +51,7 @@ data-quality check.
 
 | # | Page | What happens |
 |---|------|--------------|
-| 1 | **Consent** (`/consent`) | Purpose, what you will do, "this is not therapy", risks, confidentiality, voluntary participation, contact. *I agree* unlocks only after three affirmations: 18 or older, read and understood, understands it is a research simulation and not treatment. *I do not agree* stores nothing. |
+| 1 | **Consent** (`/consent`) | One page, never split: purpose, what you will do, risks, confidentiality, voluntary participation, contact (in columns on a computer screen; the text shrinks to fit a small window). *I agree* unlocks only after two affirmations: 18 or older, and read and understood. *Print a copy* prints it. *I do not agree* stores nothing. |
 | 2 | **About you** (`/pretest`) | Demographics first (age, gender, prior therapy), then experience with technology and robots, help-seeking attitudes, openness to an AI/robot counselor, robot anxiety (23 questions). |
 | 3 | **Study briefing** (`/briefing`) | Seven topics, one per page: what the study is about, **the three counselors (with a picture of each)**, what will happen (with times; "About you" shown as done), how the conversation works, what is and is not recorded, looking after yourself, and an invitation to ask the researcher questions. Stores nothing. |
 | 4 | **Video and sound check** (`/avcheck`) | Its own page. The participant plays a short test video (`static/video/avcheck.mp4`) and ticks "I can see the video" and "I can hear the sound clearly". The boxes unlock only after the video has played to the end, and *Continue* only once both are ticked; "It isn't working" shows troubleshooting tips. Stores nothing. |
@@ -186,7 +186,7 @@ scored. Scores are computed on the server.
 |-------|-------|-------|-------|
 | Demographics: age, gender, prior therapy (asked first) | 3 | choices; age 18–80 | — |
 | Experience with technology | 2 | 1–7 | `tech_familiarity`, `robot_exposure` |
-| Attitudes toward counseling: ATSPPH-SF (Fischer & Farina, 1995) | 10 | 0–3; items 2, 4, 8, 9, 10 reversed | `atspph_total` (0–30) |
+| Attitudes toward seeking help: MHSAS, 2026 version (Hammer et al.), with its imagined-scenario instructions | 9 | 1–6 word pairs, positive word on the right; no reverse scoring | `mhsas_mean` (1–6) |
 | Openness to an AI or robotic counselor | 1 | 1–7 | `ai_counseling_openness` |
 | Feelings about robots: Robot Anxiety Scale (Nomura et al.), S1 and S3 only | 3 + 4 | 1–7 | `ras_s1_mean`, `ras_s3_mean`, `ras_total_mean` (mean of the 7 items) |
 
@@ -320,7 +320,7 @@ tables. Each row joins to psiTurk's participant table (`Therapy_Participant_Data
 **`pretest.csv` (pretest_survey)**
 - Background: `age`, `gender` (+ `gender_self_describe`), `prior_therapy`,
   `tech_familiarity`, `robot_exposure`. Race/ethnicity is not asked.
-- Help-seeking: `atspph_1…10` (raw 0–3) and `atspph_total`.
+- Help-seeking: `mhsas_1…9` (raw 1–6) and `mhsas_mean`.
 - Openness: `ai_counseling_openness`.
 - Robot anxiety: `ras_s1_1…3`, `ras_s3_1…4`, `ras_s1_mean`, `ras_s3_mean`, `ras_total_mean`.
 - Session: `consent_version`, `mode`, `submitted_at`.
@@ -439,16 +439,25 @@ Several validated scales were adapted for this study. Report them as adapted:
 * **CARE:** items 1–8 of 10; "helping you to take control" and "making a plan of action"
   were removed. The total runs from 8 to 40 rather than 10 to 50. © SW Mercer 2004: free
   for non-commercial research, but check its terms.
-* **ATSPPH-SF:** some item wording is simplified (e.g. "psychological therapy" for
-  "psychotherapy"). Check it against your IRB-approved version.
+* **MHSAS** (Mental Help Seeking Attitudes Scale): the recommended 2026 version, word
+  for word, from the official page
+  (https://drjosephhammer.com/research/mental-help-seeking-attitudes-scale/). Cite
+  Hammer, Parent & Spiker (2018), *Journal of Counseling Psychology, 65*, 74–85, and
+  Hammer, Dueber, Toland & Weng (2026), *Current Psychology, 45*, 553. Use needs the
+  author's permission (Hammer Instrument Permission Form, linked on that page). It
+  replaces the ATSPPH-SF used in earlier versions of this study. The nine word pairs
+  are shown as one block under the shared sentence, rather than as nine separate
+  questions as the author suggests for online surveys; mention this in the write-up.
+  The instructions ask participants to imagine a serious mental health concern (feeling
+  nervous, hopeless, isolated); make sure your IRB protocol covers this.
 * **Disclosure comfort** (`dc_1…4`) is study-specific and not validated; report it as
   exploratory.
 * **Godspeed Anthropomorphism** is asked last, as a graded check of how human-like each
   counselor seemed, so it cannot prime the trust ratings.
 
 **Ethics**
-* The study is presented as a research simulation, not therapy, on the consent form, the
-  briefing and the debrief.
+* The study is presented as a research simulation, not therapy, in the briefing and the
+  debrief.
 * No audio, video or image of the participant is recorded. OBS is used only to record
   the counselor clips.
 * The briefing shows all three counselors, but which one a participant meets and the

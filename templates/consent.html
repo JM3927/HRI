@@ -1,91 +1,94 @@
 {#
   consent.html — Informed consent (rendered by custom.consent_gate).
   Context: ids = {hitId, assignmentId, workerId, mode}, consent_version.
-  "Agree" is enabled only after all three affirmations are ticked and then
+  "Agree" is enabled only after both affirmations are ticked and then
   forwards to the "About you" questionnaire (/pretest) with consent=agree. "Decline"
   stores nothing.
-  Split into screen-sized pages by static/js/pager.js: each section is a group
-  (its heading repeats if it continues on the next page); the decision buttons
-  sit in the nav bar and appear on the last page, next to the affirmations.
+  Always ONE page: the whole sheet is a single pager unit, so pager.js never
+  splits it; on a small window it shrinks the text until the sheet fits instead.
+  On wide screens the sections flow in two columns.
 #}
 {% extends "layout.html" %}
 {% block title %}Consent to participate · {{ study.short_title }}{% endblock %}
+{% block body_class %}consent-page{% endblock %}
 
 {% block content %}
-<article class="card consent pager pager-fill" id="consent-panel" data-pager>
+<article class="card consent pager" id="consent-panel" data-pager data-pager-nav="always">
   <div class="pager-body">
-  <header class="card-header" data-unit>
-    <p class="eyebrow">Informed consent · {{ consent_version }}</p>
-    <h1>{{ study.title }}</h1>
-    <dl class="meta-grid">
-      <div><dt>Principal investigator</dt><dd>{{ study.pi_name }}</dd></div>
-      <div><dt>Institution</dt><dd>{{ study.institution }}</dd></div>
-      <div><dt>Time required</dt><dd>About {{ study.duration_minutes }} minutes</dd></div>
-    </dl>
-  </header>
+  <div class="consent-sheet" data-unit>
+    <header class="consent-head">
+      <div class="consent-title">
+        <p class="eyebrow">Informed consent · {{ consent_version }}</p>
+        <h1>{{ study.title }}</h1>
+      </div>
+      <dl class="meta-grid">
+        <div><dt>Principal investigator</dt><dd>{{ study.pi_name }}</dd></div>
+        <div><dt>Institution</dt><dd>{{ study.institution }}</dd></div>
+        <div><dt>Time required</dt><dd>About {{ study.duration_minutes }} minutes</dd></div>
+      </dl>
+    </header>
 
-  <div class="consent-body" data-pager-group>
-    <section data-pager-group>
-      <h2>Purpose of the study</h2>
-      <p data-unit>We are studying how people experience short check-in conversations with different variations of
-        conversational counselors. Your answers will help researchers understand what makes people feel when talking with differing counselors.</p>
-    </section>
+    <div class="consent-facts">
+      <section>
+        <h2>Purpose of the study</h2>
+        <p>We are studying how people experience short check-in conversations with different variations of
+          conversational counselors. Your answers will help researchers understand what makes people feel when talking with differing counselors.</p>
+      </section>
 
-    <section data-pager-group>
-      <h2>What you will do</h2>
-      <ol data-unit>
-        <li>Answer a short questionnaire about yourself, your experience with technology,  robots, and your attitudes toward counseling.</li>
-        <li>Take part in a brief, pre-scripted check-in conversation (about 5 minutes). The pre-recorded counselor speaks through
-          your headphones, and you respond by choosing from multiple-choice answers on screen.</li>
-        <li>Answer a questionnaire about your impressions of the conversation.</li>
-      </ol>
-      <p data-unit>Your voice and image are <strong>not</strong> recorded. We record only the answers you click and how long
-        each answer takes.</p>
-    </section>
+      <section>
+        <h2>What you will do</h2>
+        <ol>
+          <li>Answer a short questionnaire about yourself, your experience with technology,  robots, and your attitudes toward counseling.</li>
+          <li>Take part in a brief, pre-scripted check-in conversation (about 5 minutes). The pre-recorded counselor speaks through
+            your headphones, and you respond by choosing from multiple-choice answers on screen.</li>
+          <li>Answer a questionnaire about your impressions of the conversation.</li>
+        </ol>
+        <p>Your voice and image are <strong>not</strong> recorded. We record only the answers you click and how long
+          each answer takes.</p>
+      </section>
 
-    <section data-pager-group>
-      <h2>Risks and discomforts</h2>
-      <p data-unit>Some questions ask you to reflect on stress, mood, and social support, which could cause
-        mild discomfort. You may skip the study, pause, or stop at any time without penalty.</p>
-    </section>
+      <section>
+        <h2>Risks and discomforts</h2>
+        <p>Some questions ask you to reflect on stress, mood, and social support, which could cause
+          mild discomfort. You may skip the study, pause, or stop at any time without penalty.</p>
+      </section>
 
-    <section data-pager-group>
-      <h2>Confidentiality</h2>
-      <p data-unit>Your responses are stored on a secure, private database, and are de-identified. De-identified data may be shared
-        with other researchers or in public data repositories.</p>
-    </section>
+      <section>
+        <h2>Confidentiality</h2>
+        <p>Your responses are stored on a secure, private database, and are de-identified. De-identified data may be shared
+          with other researchers or in public data repositories.</p>
+      </section>
 
-    <section data-pager-group>
-      <h2>Voluntary participation</h2>
-      <p data-unit>Participation is voluntary. You may decline now or withdraw at any time by closing this window. If you withdraw, your data will not be used.</p>
-    </section>
+      <section>
+        <h2>Voluntary participation</h2>
+        <p>Participation is voluntary. You may decline now or withdraw at any time by closing this window. If you withdraw, your data will not be used.</p>
+      </section>
 
-    <section data-pager-group>
-      <h2>Contact</h2>
-      <p data-unit>Questions about the study: {{ study.pi_name }}, <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.<br></p>
-    </section>
+      <section>
+        <h2>Contact</h2>
+        <p>Questions about the study: {{ study.pi_name }}, <a href="mailto:{{ study.contact_email }}">{{ study.contact_email }}</a>.</p>
+      </section>
+    </div>
+
+    <form class="consent-form" id="consent-form" novalidate>
+      <h2>Your consent</h2>
+      <div class="consent-checks">
+        <label class="check">
+          <input type="checkbox" name="affirm" value="age">
+          <span>I am 18 years of age or older.</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="affirm" value="read">
+          <span>I have read and understood the information above, and my questions have been answered.</span>
+        </label>
+      </div>
+    </form>
   </div>
-
-  {# One unit, so the affirmations always share the last page with the Agree button. #}
-  <form class="consent-form" id="consent-form" novalidate data-unit>
-    <h2>Your consent</h2>
-    <label class="check">
-      <input type="checkbox" name="affirm" value="age">
-      <span>I am 18 years of age or older.</span>
-    </label>
-    <label class="check">
-      <input type="checkbox" name="affirm" value="read">
-      <span>I have read and understood the information above, and my questions have been answered.</span>
-    </label>
-  </form>
   </div>
 
   <div class="pager-nav">
-    <span class="pager-count" data-pager-count></span>
-    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
-    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="button" class="btn btn-ghost consent-print" onclick="window.print()" data-pager-final>Print a copy</button>
     <button type="button" class="btn btn-ghost" id="decline-btn" data-pager-final>I do not agree</button>
-    <button type="button" class="btn btn-ghost" onclick="window.print()" data-pager-final>Print a copy</button>
     <button type="submit" class="btn btn-primary" id="agree-btn" form="consent-form" data-pager-final disabled>I agree to participate</button>
   </div>
 </article>
