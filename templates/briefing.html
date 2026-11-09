@@ -1,28 +1,34 @@
 {#
-  briefing.html — Study briefing, shown after consent and before the pre-test
-  (rendered by custom.briefing). Context: ids = {hitId, assignmentId, workerId, mode}.
+  briefing.html — Study briefing, shown after the "About you" questionnaire and
+  before the conversation (rendered by custom.briefing).
+  Context: ids = {hitId, assignmentId, workerId, mode}.
 
-  Follows the usual HRI procedure: once consent is given, participants are
-  told what the study is about, what will happen step by step, what is and is
+  Participants are told what the study is about, which kinds of counselors
+  take part (with a picture of each), what will happen next, what is and is
   not recorded, and how to stop or get help, and are invited to ask the
-  researcher questions before anything starts.
+  researcher questions before the conversation starts.
 
-  The wording is identical in every condition and keeps the study's cover
-  framing ("different kinds of counselors, some of them robots"). It does not
-  name the conditions or the hypotheses; those are explained in the debrief
-  (complete.html). If you edit this page, keep it condition-neutral.
+  The wording is identical in every condition. It shows all three counselors
+  but never which one this participant will meet, and does not state the
+  hypotheses; those are explained in the debrief (complete.html). If you edit
+  this page, keep it the same for every condition.
+
+  Counselor pictures: static/images/counselors/human.jpg, furhat.jpg and
+  peerbot.jpg. Until a file exists, its slot shows a grey placeholder naming
+  the missing file.
 
   Paged by static/js/pager.js. Each <section data-pager-break> starts a new
   page (one topic per page); a topic that is too tall for the screen continues
-  on the next page with its heading repeated. "Start Part 1" submits the hidden
-  form below, which forwards to /pretest with consent=agree&briefed=1.
+  on the next page with its heading repeated. "Continue" submits the hidden
+  form below, which forwards to the video and sound check (/avcheck) with
+  briefed=1.
 #}
 {% extends "layout.html" %}
 {% block title %}About this study · {{ study.short_title }}{% endblock %}
 
 {% block header_extra %}
 <div class="header-progress" aria-label="Study progress">
-  <span class="step is-done">Consent</span><span class="step is-current">Study info</span><span class="step">About you</span><span class="step">Conversation</span><span class="step">Your impressions</span>
+  <span class="step is-done">Consent</span><span class="step is-done">About you</span><span class="step is-current">Study info</span><span class="step">Conversation</span><span class="step">Your impressions</span>
 </div>
 {% endblock %}
 
@@ -35,8 +41,9 @@
     <header class="card-header" data-unit>
       <p class="eyebrow">Study briefing</p>
       <h1>Welcome, and thank you for taking part</h1>
-      <p class="lead">Before we start, here is what this study is about and what will happen. It takes about two
-        minutes to read. Please read each page carefully.</p>
+      <p class="lead">Thank you for answering the questions about you. Before the conversation starts, here is
+        what this study is about and what will happen next. It takes about two minutes to read. Please read
+        each page carefully.</p>
     </header>
 
     <h2>What this study is about</h2>
@@ -50,16 +57,52 @@
       no right or wrong answers.</p>
   </section>
 
-  {# ---------------------------------------------------------------- 2 #}
+  {# ------------------------------------------------- 2 (counselors) #}
+  {# Pictures go in static/images/counselors/ with exactly these names:   #}
+  {#   human.jpg   furhat.jpg   peerbot.jpg                               #}
+  {# Square images work best (about 600 x 600 px, under 300 KB each).     #}
+  <section class="brief-section" data-pager-break data-pager-group>
+    <h2>The counselors in this study</h2>
+    <p data-unit>These are the three kinds of counselors taking part. You will talk with <strong>one</strong>
+      of them, chosen at random.</p>
+    <div class="brief-counselors" data-pager-group>
+      <figure class="brief-counselor" data-unit>
+        <div class="brief-photo">
+          <img src="/static/images/counselors/human.jpg" alt="The human counselor"
+               onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
+          <span class="brief-photo-missing" hidden>Picture not added yet:<br>static/images/counselors/human.jpg</span>
+        </div>
+        <figcaption>A human counselor</figcaption>
+      </figure>
+      <figure class="brief-counselor" data-unit>
+        <div class="brief-photo">
+          <img src="/static/images/counselors/furhat.jpg" alt="Furhat, a social robot"
+               onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
+          <span class="brief-photo-missing" hidden>Picture not added yet:<br>static/images/counselors/furhat.jpg</span>
+        </div>
+        <figcaption>Furhat, a social robot</figcaption>
+      </figure>
+      <figure class="brief-counselor" data-unit>
+        <div class="brief-photo">
+          <img src="/static/images/counselors/peerbot.jpg" alt="A mechanical robot"
+               onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
+          <span class="brief-photo-missing" hidden>Picture not added yet:<br>static/images/counselors/peerbot.jpg</span>
+        </div>
+        <figcaption>A mechanical robot</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- 3 #}
   <section class="brief-section" data-pager-break data-pager-group>
     <h2>What will happen</h2>
     <p data-unit>The study has three parts and takes about {{ study.duration_minutes }} minutes in total.
-      The bar at the top of the screen shows where you are.</p>
+      You have finished part 1. The bar at the top of the screen shows where you are.</p>
     <ol class="brief-steps" data-pager-group>
-      <li data-unit>
-        <span class="brief-step-num" aria-hidden="true">1</span>
+      <li class="is-done" data-unit>
+        <span class="brief-step-num" aria-hidden="true">✓</span>
         <span class="brief-step-title">About you</span>
-        <span class="brief-step-time">about 5 min</span>
+        <span class="brief-step-time">done</span>
         <p>A questionnaire about your background, your experience with technology and robots, and your views
           on seeking help with stress or mental health.</p>
       </li>
@@ -80,12 +123,12 @@
     <p class="brief-after" data-unit><strong>Afterwards:</strong> we explain the study in full (about 2 min).</p>
   </section>
 
-  {# ---------------------------------------------------------------- 3 #}
+  {# ---------------------------------------------------------------- 4 #}
   <section class="brief-section" data-pager-break data-pager-group>
     <h2>How the conversation works</h2>
     <ul class="brief-list" data-pager-group>
-      <li data-unit><strong>Put on the headphones.</strong> Before the conversation starts, you will play a test
-        tone and set a comfortable volume.</li>
+      <li data-unit><strong>Put on the headphones.</strong> Before the conversation starts, you will play a short
+        test video to check that you can see it and hear it, and set a comfortable volume.</li>
       <li data-unit><strong>Listen.</strong> The counselor speaks to you through the headphones. The conversation
         follows a set script.</li>
       <li data-unit><strong>Answer by clicking.</strong> When the counselor finishes speaking, answer choices
@@ -101,7 +144,7 @@
     </ul>
   </section>
 
-  {# ---------------------------------------------------------------- 4 #}
+  {# ---------------------------------------------------------------- 5 #}
   <section class="brief-section" data-pager-break data-pager-group>
     <h2>What we record</h2>
     <div class="brief-columns" data-pager-group>
@@ -128,7 +171,7 @@
       analysed only as research data.</p>
   </section>
 
-  {# ---------------------------------------------------------------- 5 #}
+  {# ---------------------------------------------------------------- 6 #}
   <section class="brief-section" data-pager-break data-pager-group>
     <h2>Looking after yourself</h2>
     <p data-unit>Some questions ask about stress, mood, and the support you have. If a question feels
@@ -139,20 +182,19 @@
       at any point.</p>
   </section>
 
-  {# ---------------------------------------------------------------- 6 #}
+  {# ---------------------------------------------------------------- 7 #}
   <section class="brief-section" data-pager-break data-pager-group>
     <h2>Before you begin</h2>
     <p data-unit><strong>Do you have any questions?</strong> Please ask the researcher now, before you start.
       Once you begin, the researcher can still help with anything technical, or if you want to stop.</p>
-    <p data-unit>When you are ready, click <em>Start Part 1</em>. You will begin with the questionnaire about
-      you.</p>
+    <p data-unit>When you are ready, put on the headphones and click <em>Continue</em>. Next, you will check that
+      the video and sound work, and then the conversation starts.</p>
   </section>
 
   </div>
 
-  <form id="briefing-form" action="/pretest" method="get" hidden>
+  <form id="briefing-form" action="/avcheck" method="get" hidden>
     {% for key, value in ids.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
-    <input type="hidden" name="consent" value="agree">
     <input type="hidden" name="briefed" value="1">
   </form>
 
@@ -160,7 +202,7 @@
     <span class="pager-count" data-pager-count></span>
     <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
     <button type="button" class="btn btn-primary" data-pager-next>Next</button>
-    <button type="submit" class="btn btn-primary" form="briefing-form" data-pager-final>Start Part 1</button>
+    <button type="submit" class="btn btn-primary" form="briefing-form" data-pager-final>Continue</button>
   </div>
 </article>
 {% endblock %}

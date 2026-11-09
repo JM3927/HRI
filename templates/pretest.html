@@ -1,8 +1,9 @@
 {#
-  pretest.html — Pre-session questionnaire (rendered by custom.pretest).
-  Context: ids, choices (gender, ethnicity, prior therapy), blocks (tech,
+  pretest.html — "About you" questionnaire, shown straight after consent
+  (rendered by custom.pretest). Demographics come first.
+  Context: ids, choices (gender, prior therapy), blocks (tech,
   ATSPPH-SF, openness to AI counseling, RAS), age_min, age_max. Submitted as JSON to
-  /api/save_pretest by static/js/survey.js; the server redirects to /exp.
+  /api/save_pretest by static/js/survey.js; the server redirects to /briefing.
 #}
 {% extends "layout.html" %}
 {% from "macros.html" import likert_block, choice_question %}
@@ -10,7 +11,7 @@
 
 {% block header_extra %}
 <div class="header-progress" aria-label="Study progress">
-  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-current">About you</span><span class="step">Conversation</span><span class="step">Your impressions</span>
+  <span class="step is-done">Consent</span><span class="step is-current">About you</span><span class="step">Study info</span><span class="step">Conversation</span><span class="step">Your impressions</span>
 </div>
 {% endblock %}
 
@@ -47,7 +48,7 @@
     <span class="pager-count" data-pager-count></span>
     <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
     <button type="button" class="btn btn-primary" data-pager-next>Next</button>
-    <button type="submit" class="btn btn-primary" id="submit-btn" data-pager-final>Continue to the conversation</button>
+    <button type="submit" class="btn btn-primary" id="submit-btn" data-pager-final>Continue</button>
   </div>
 </form>
 {% endblock %}

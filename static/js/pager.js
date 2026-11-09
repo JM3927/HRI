@@ -21,6 +21,11 @@
  * data-pager-break on a unit, or on an element containing units, starts a new
  * page there even if it would fit on the current one (one topic per page).
  *
+ * data-pager-reserve on a hidden element inside a unit (e.g. the "Please
+ * describe" box that a "Prefer to self-describe" answer reveals) keeps room for
+ * it when pages are laid out, so revealing it later never pushes the question
+ * onto another page.
+ *
  * Units are packed greedily, in document order, into pages that fit the body
  * at the current window size. Nothing is cloned or moved, so form controls keep
  * their state and every unit appears exactly once. Pages are rebuilt when the
@@ -153,6 +158,7 @@
     var tooTall = false;
     var cur = [];
     this.unitList.forEach(function (u) { u.style.zoom = ''; });
+    var reserved = this.reserve();
     this.setVisible([]);
     this.unitList.forEach(function (u) {
       if (cur.length && self.startsPage(u)) {
@@ -178,6 +184,7 @@
       var size = parseFloat(getComputedStyle(html).fontSize) || 16;
       if (size > MIN_ROOT_FONT_PX) {
         html.style.fontSize = (size - 1) + 'px';
+        this.unreserve(reserved);
         this.busy = false;
         return this.paginate(anchor);
       }
@@ -185,6 +192,7 @@
 
     this.pages = pages;
     if (tooTall) this.zoomOversized();
+    this.unreserve(reserved);
     if (this.nav) this.nav.classList.remove('pager-measuring');
     var index = 0;
     if (anchor) {
@@ -193,6 +201,18 @@
     this.show(index, false);
     this.size = this.bodySize();
     this.busy = false;
+  };
+
+  /** Show hidden [data-pager-reserve] elements, invisibly, so they are measured. */
+  Pager.prototype.reserve = function () {
+    var list = Array.prototype.filter.call(
+      this.body.querySelectorAll('[data-pager-reserve]'), function (el) { return el.hidden; });
+    list.forEach(function (el) { el.hidden = false; el.style.visibility = 'hidden'; });
+    return list;
+  };
+
+  Pager.prototype.unreserve = function (list) {
+    list.forEach(function (el) { el.hidden = true; el.style.visibility = ''; });
   };
 
   /**

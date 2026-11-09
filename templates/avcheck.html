@@ -1,0 +1,137 @@
+{#
+  avcheck.html — Video and sound check, its own page between the study briefing
+  and the conversation (rendered by custom.avcheck).
+  Context: ids = {hitId, assignmentId, workerId, mode}.
+
+  The participant plays a short test video (static/video/avcheck.mp4) and
+  confirms both "I can see the video" and "I can hear the sound". The two
+  confirmations unlock only after the video has played to the end, and
+  "Continue" only once both are ticked. It then forwards to /exp with
+  briefed=1&avchecked=1; /exp refuses to open without them.
+
+  The test clip is neutral (no counselor, no voice), so it is identical for
+  every condition. To use your own clip, replace static/video/avcheck.mp4
+  (H.264 video + AAC audio, a few seconds long).
+#}
+{% extends "layout.html" %}
+{% block title %}Video and sound check · {{ study.short_title }}{% endblock %}
+
+{% block header_extra %}
+<div class="header-progress" aria-label="Study progress">
+  <span class="step is-done">Consent</span><span class="step is-done">About you</span><span class="step is-done">Study info</span><span class="step is-current">Conversation</span><span class="step">Your impressions</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<article class="card avcheck pager pager-fill" id="avcheck-panel" data-pager data-pager-nav="always">
+  <div class="pager-body">
+  <header class="card-header" data-unit>
+    <p class="eyebrow">Before the conversation</p>
+    <h1>Check your video and sound</h1>
+    <p class="lead">Put on your headphones, play the short video, and set a comfortable volume.</p>
+  </header>
+
+  {# Two units in one group: side by side on a computer screen; on a phone the
+     video and the confirmations can fall on consecutive pages. #}
+  <div class="avcheck-grid" data-pager-group>
+    <div class="avcheck-video" data-unit>
+      <video id="check-video" src="/static/video/avcheck.mp4" controls playsinline preload="auto"
+             aria-label="Test video with sound"></video>
+    </div>
+
+    <form class="avcheck-confirm" id="avcheck-form" action="/exp" method="get" novalidate data-unit>
+      {% for key, value in ids.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+      <input type="hidden" name="briefed" value="1">
+      <input type="hidden" name="avchecked" value="1">
+
+      <p class="avcheck-status" id="avcheck-status" aria-live="polite">Press play to start the video.</p>
+      <label class="check">
+        <input type="checkbox" id="saw-video" disabled>
+        <span>I can see the video.</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="heard-audio" disabled>
+        <span>I can hear the sound clearly, at a comfortable volume.</span>
+      </label>
+      <button type="button" class="btn-link" id="avcheck-help-toggle" aria-expanded="false"
+              aria-controls="avcheck-help">It isn't working</button>
+    </form>
+  </div>
+
+  <div class="alert alert-warn avcheck-help" id="avcheck-help" data-unit hidden>
+    <p><strong>If you cannot see the video or hear the sound:</strong></p>
+    <ul>
+      <li>Check that the headphones are plugged in (or connected) and turned on.</li>
+      <li>Turn up the volume on the computer, and on the video using its volume button.</li>
+      <li>Make sure this browser tab is not muted, then play the video again.</li>
+      <li>If it still does not work, please tell the researcher before going on.</li>
+    </ul>
+  </div>
+  </div>
+
+  <div class="pager-nav">
+    <span class="pager-count" data-pager-count></span>
+    <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
+    <button type="button" class="btn btn-primary" data-pager-next>Next</button>
+    <button type="submit" class="btn btn-primary" id="avcheck-continue" form="avcheck-form" data-pager-final disabled>Continue to the conversation</button>
+  </div>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+  var video = document.getElementById('check-video');
+  var status = document.getElementById('avcheck-status');
+  var saw = document.getElementById('saw-video');
+  var heard = document.getElementById('heard-audio');
+  var go = document.getElementById('avcheck-continue');
+  var form = document.getElementById('avcheck-form');
+  var help = document.getElementById('avcheck-help');
+  var helpToggle = document.getElementById('avcheck-help-toggle');
+  var played = false;
+
+  function sync() { go.disabled = !(played && saw.checked && heard.checked); }
+
+  // The confirmations unlock once the clip has been watched to (nearly) the end.
+  function finished() {
+    if (played) return;
+    played = true;
+    saw.disabled = false;
+    heard.disabled = false;
+    status.textContent = 'Did the video and sound work? Tick both boxes to continue. You can play it again.';
+    sync();
+  }
+  video.addEventListener('play', function () {
+    if (!played) status.textContent = 'Playing… watch and listen until the end.';
+  });
+  video.addEventListener('ended', finished);
+  video.addEventListener('timeupdate', function () {
+    if (video.duration && video.currentTime >= video.duration - 0.25) finished();
+  });
+  video.addEventListener('error', function () {
+    status.textContent = 'The test video could not be played. Please tell the researcher.';
+    setHelp(true);
+  });
+
+  saw.addEventListener('change', sync);
+  heard.addEventListener('change', sync);
+  // Opening or closing the tips changes how much fits, so lay the pages out
+  // again (closing them must not leave an empty last page behind).
+  function setHelp(open) {
+    help.hidden = !open;
+    helpToggle.setAttribute('aria-expanded', String(open));
+    if (window.Pager) Pager.of(document.getElementById('avcheck-panel')).paginate(open ? help : null);
+  }
+  helpToggle.addEventListener('click', function () { setHelp(help.hidden); });
+
+  form.addEventListener('submit', function (ev) {
+    if (go.disabled) { ev.preventDefault(); return; }
+    video.pause();
+    go.disabled = true;   // one click only
+  });
+  sync();
+})();
+</script>
+{% endblock %}

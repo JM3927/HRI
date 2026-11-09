@@ -2,7 +2,7 @@
   consent.html — Informed consent (rendered by custom.consent_gate).
   Context: ids = {hitId, assignmentId, workerId, mode}, consent_version.
   "Agree" is enabled only after all three affirmations are ticked and then
-  forwards to the study briefing (/briefing) with consent=agree. "Decline"
+  forwards to the "About you" questionnaire (/pretest) with consent=agree. "Decline"
   stores nothing.
   Split into screen-sized pages by static/js/pager.js: each section is a group
   (its heading repeats if it continues on the next page); the decision buttons
@@ -28,8 +28,7 @@
     <section data-pager-group>
       <h2>Purpose of the study</h2>
       <p data-unit>We are studying how people experience short check-in conversations with different variations of
-        conversational counselors. Your answers will help researchers understand what makes people feel
-        comfortable and supported when talking with differing counselors.</p>
+        conversational counselors. Your answers will help researchers understand what makes people feel when talking with differing counselors.</p>
     </section>
 
     <section data-pager-group>
@@ -42,13 +41,6 @@
       </ol>
       <p data-unit>Your voice and image are <strong>not</strong> recorded. We record only the answers you click and how long
         each answer takes.</p>
-    </section>
-
-    <section data-pager-group>
-      <h2>This is not therapy</h2>
-      <p data-unit>The conversation is a research simulation. It is not a clinical assessment, diagnosis, or treatment, and no
-        one will review your answers to provide care. If you would like mental health support, please contact a
-        qualified professional or the resources listed at the bottom of every page.</p>
     </section>
 
     <section data-pager-group>
@@ -84,10 +76,6 @@
     <label class="check">
       <input type="checkbox" name="affirm" value="read">
       <span>I have read and understood the information above, and my questions have been answered.</span>
-    </label>
-    <label class="check">
-      <input type="checkbox" name="affirm" value="not_therapy">
-      <span>I understand this conversation is a research simulation and not mental health treatment.</span>
     </label>
   </form>
   </div>
@@ -132,7 +120,7 @@
     agree.disabled = true;
     var params = new URLSearchParams(ids);
     params.set('consent', 'agree');
-    window.location.assign('/briefing?' + params.toString());
+    window.location.assign('/pretest?' + params.toString());
   });
 
   document.getElementById('decline-btn').addEventListener('click', function () {

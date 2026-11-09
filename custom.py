@@ -6,17 +6,20 @@ Blueprint. Everything study-specific lives here; config.txt is not modified.
 
 Participant flow
 ----------------
-    /consent ─Agree─▶ /briefing ─▶ /pretest ──▶ /exp ──▶ /posttest ──▶ /complete
-       │                              │            │          │             │
-       │                POST /api/save_pretest     │  POST /api/save_posttest
-       │                                           │
-       │                         POST /api/save_trial (one per dialogue node)
+    /consent ─Agree─▶ /pretest ──▶ /briefing ─▶ /avcheck ─▶ /exp ──▶ /posttest ──▶ /complete
+       │                │                                   │          │             │
+       │      POST /api/save_pretest                        │  POST /api/save_posttest
+       │                                                    │
+       │                                  POST /api/save_trial (one per dialogue node)
        ▼
     Decline → nothing is stored
 
-/briefing is the study information (what the study is about, what will
-happen, what is recorded, how to stop); it stores nothing. /pretest opens only
-with consent=agree&briefed=1 in the link, so the briefing cannot be skipped.
+/pretest ("About you": demographics first, then the baseline scales) comes
+straight after consent. /briefing is the study information (what the study is
+about, the counselors, what will happen, what is recorded, how to stop); it
+stores nothing and opens only once the pre-test is saved. /avcheck is the video
+and sound check (a test clip the participant must play and confirm). /exp
+opens only with briefed=1&avchecked=1 in the link, so neither can be skipped.
 
 How the built-in psiTurk routes are handled
 -------------------------------------------
@@ -27,15 +30,17 @@ releases. To stay version-independent, those three URLs are handled by a
 `before_app_request` hook (`protocol_router`), which runs before *any* view:
 
   /consent   fully handled here (renders templates/consent.html).
-  /exp       gated here (consent + pre-test must exist; finished sessions are
-             forwarded), then handed to psiTurk's own view so that psiTurk
+  /exp       gated here (pre-test must exist and the briefing and the video
+             and sound check must have been passed; finished sessions are
+             forwarded), then handed to
+             psiTurk's own view so that psiTurk
              still creates the Participant row and assigns the condition
              (counterbalanced across `num_conds`).
   /complete  fully handled here: requires the post-test, marks the psiTurk
              Participant COMPLETED, renders templates/complete.html.
 
-`/briefing`, `/pretest`, `/posttest`, the `/api/*` endpoints and the
-researcher-only `/lab` pages are ordinary Blueprint routes.
+`/briefing`, `/avcheck`, `/pretest`, `/posttest`, the `/api/*` endpoints and
+the researcher-only `/lab` pages are ordinary Blueprint routes.
 
 Required config.txt values (read, never written)
 ------------------------------------------------
@@ -47,9 +52,11 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import hmac
 import io
 import logging
 import re
+import secrets
 from datetime import datetime, timezone
 from functools import wraps
 from typing import Callable, Dict, Optional
@@ -146,16 +153,26 @@ def _startup_checks() -> None:
     # earlier version of the questionnaires would reject every save. Stop now
     # with instructions instead.
     db_columns = sa_inspect(engine)
+    move_aside = ("Stop the server, move participants.db aside (e.g. mv participants.db "
+                  "participants_old.db) so a fresh one is created, and start again.")
     for model in (PreTestSurvey, BranchingTrialLog, PostTestSurvey):
         table = model.__tablename__
-        existing = {c["name"] for c in db_columns.get_columns(table)}
+        db_cols = db_columns.get_columns(table)
+        existing = {c["name"] for c in db_cols}
         stale = sorted(set(model.__table__.columns.keys()) - existing)
         if stale:
             raise RuntimeError(
                 f"The database table '{table}' was created by an older version of this study and lacks "
-                f"{len(stale)} column(s) (e.g. {', '.join(stale[:5])}). Stop the server, move "
-                "participants.db aside (e.g. mv participants.db participants_old.db) so a fresh one is "
-                "created, and start again.")
+                f"{len(stale)} column(s) (e.g. {', '.join(stale[:5])}). " + move_aside)
+        # A required column that the study no longer fills (e.g. a removed
+        # question) would make every save fail, so stop now instead.
+        removed = sorted(c["name"] for c in db_cols
+                         if c["name"] not in model.__table__.columns
+                         and not c.get("nullable", True) and c.get("default") is None)
+        if removed:
+            raise RuntimeError(
+                f"The database table '{table}' was created by an older version of this study and has "
+                f"required column(s) for questions that were removed ({', '.join(removed)}). " + move_aside)
 
 
 # Create the custom tables (psiTurk's init_db() calls Base.metadata.create_all,
@@ -236,6 +253,21 @@ def _prior_participation(worker_id: str, assignment_id: str) -> bool:
     return other_participant is not None or other_pretest is not None
 
 
+def _fresh_practice_ids(ids: Dict[str, str]) -> Dict[str, str]:
+    """New ids for a practice (debug) run whose link was already used.
+
+    The same tag is appended to workerId and assignmentId (replacing an earlier
+    tag), so psiTurk sees a brand-new participant and the earlier run's data is
+    kept separately under its own uniqueid.
+    """
+    tag = "-r" + secrets.token_hex(3)
+
+    def retag(value: str) -> str:
+        return re.sub(r"-r[0-9a-f]{6}$", "", value)[:64 - len(tag)] + tag
+
+    return dict(ids, workerId=retag(ids["workerId"]), assignmentId=retag(ids["assignmentId"]))
+
+
 def _message(title: str, body: str, status: int = 200) -> Response:
     """Render the generic participant-facing message page."""
     return _no_store(make_response(render_template("message.html", title=title, body=body), status))
@@ -287,11 +319,16 @@ def consent_gate():
                         "Please ask the researcher for a new link to the study.", 400)
     uid = _uid(ids)
 
+    if ids["mode"] == "debug" and (_has_pretest(uid) or _participant(uid) is not None):
+        # Practice / pilot: opening the study link again starts the whole study
+        # again from consent, as a new run with new ids (the earlier run's data
+        # stays in the database under its own uniqueid).
+        return redirect(_url("/consent", **_fresh_practice_ids(ids)))
     if _has_posttest(uid):
         return redirect(_url("/complete", uniqueId=uid, mode=ids["mode"]))
     if _has_pretest(uid):
-        # Consent was already given; resume where the participant left off.
-        return redirect(_url("/exp", **ids))
+        # Live participant: consent was already given; resume where they left off.
+        return redirect(_url("/briefing", **ids))
     if ids["mode"] != "debug" and _prior_participation(ids["workerId"], ids["assignmentId"]):
         return _message("You have already taken part",
                         "Our records show you have already participated in this study. "
@@ -315,6 +352,10 @@ def exp_gate():
         return redirect(_url("/posttest", uniqueId=uid, mode=ids["mode"]))
     if not _has_pretest(uid):
         return redirect(_url("/consent", **ids))
+    if request.args.get("briefed") != "1":
+        return redirect(_url("/briefing", **ids))
+    if request.args.get("avchecked") != "1":
+        return redirect(_url("/avcheck", briefed="1", **ids))
     return None  # Fall through: psiTurk creates the Participant and renders exp.html.
 
 
@@ -364,17 +405,39 @@ def protocol_router():
 @custom_code.route("/briefing", methods=["GET"])
 @nocache
 def briefing():
-    """Study briefing: shown once consent is given, before the pre-test."""
+    """Study briefing: shown once the pre-test is saved, before the conversation."""
     ids = _parse_ids(request.args)
     if ids is None:
         return _message("This study link is incomplete",
                         "Please ask the researcher for a new link to the study.", 400)
     uid = _uid(ids)
-    if _has_pretest(uid):
-        return redirect(_url("/exp", **ids))
-    if request.args.get("consent") != "agree":
+    if _has_posttest(uid):
+        return redirect(_url("/complete", uniqueId=uid, mode=ids["mode"]))
+    if _has_finished_dialogue(uid):
+        return redirect(_url("/posttest", uniqueId=uid, mode=ids["mode"]))
+    if not _has_pretest(uid):
         return redirect(_url("/consent", **ids))
     return render_template("briefing.html", ids=ids)
+
+
+@custom_code.route("/avcheck", methods=["GET"])
+@nocache
+def avcheck():
+    """Video and sound check: a test clip to play and confirm, before the conversation."""
+    ids = _parse_ids(request.args)
+    if ids is None:
+        return _message("This study link is incomplete",
+                        "Please ask the researcher for a new link to the study.", 400)
+    uid = _uid(ids)
+    if _has_posttest(uid):
+        return redirect(_url("/complete", uniqueId=uid, mode=ids["mode"]))
+    if _has_finished_dialogue(uid):
+        return redirect(_url("/posttest", uniqueId=uid, mode=ids["mode"]))
+    if not _has_pretest(uid):
+        return redirect(_url("/consent", **ids))
+    if request.args.get("briefed") != "1":
+        return redirect(_url("/briefing", **ids))
+    return render_template("avcheck.html", ids=ids)
 
 
 @custom_code.route("/pretest", methods=["GET"])
@@ -387,11 +450,9 @@ def pretest():
                         "Please ask the researcher for a new link to the study.", 400)
     uid = _uid(ids)
     if _has_pretest(uid):
-        return redirect(_url("/exp", **ids))
+        return redirect(_url("/briefing", **ids))
     if request.args.get("consent") != "agree":
         return redirect(_url("/consent", **ids))
-    if request.args.get("briefed") != "1":
-        return redirect(_url("/briefing", consent="agree", **ids))
 
     return render_template(
         "pretest.html", ids=ids,
@@ -436,7 +497,7 @@ def api_save_pretest():
     if ids is None:
         return _api_error("Missing or invalid hitId / assignmentId / workerId / mode.", 400)
     uid = _uid(ids)
-    next_url = _url("/exp", **ids)
+    next_url = _url("/briefing", **ids)
 
     if _has_pretest(uid):
         return jsonify(status="exists", next_url=next_url)
@@ -576,22 +637,33 @@ def api_save_posttest():
 # Researcher-only pages: session launcher, enrolment counts, CSV export
 # --------------------------------------------------------------------------- #
 
-_LOCAL_ADDRS = {"127.0.0.1", "::1", "localhost"}
-
-
 def researcher_only(view):
-    """Allow localhost, or HTTP Basic auth with config.txt's login_username/login_pw."""
+    """Require HTTP Basic auth with config.txt's login_username / login_pw on every request.
+
+    There is deliberately no exemption for requests from this computer: a tunnel
+    (Tailscale Funnel, cloudflared, ngrok) or reverse proxy hands every internet
+    visitor to the server as 127.0.0.1, so "local" cannot be trusted. If no login
+    is configured, the researcher pages stay closed.
+    """
     @wraps(view)
     def _wrapped(*args, **kwargs):
-        if request.remote_addr in _LOCAL_ADDRS:
-            return view(*args, **kwargs)
-        user = _config_value("Server Parameters", "login_username")
-        pw = _config_value("Server Parameters", "login_pw")
-        auth = request.authorization
-        if user and pw and auth and auth.username == user and auth.password == pw:
+        user = _config_value("Server Parameters", "login_username") or ""
+        pw = _config_value("Server Parameters", "login_pw") or ""
+        if not (user and pw):
+            logger.warning("Researcher console refused: login_username / login_pw are not set.")
+            return Response("The researcher console is disabled. Set login_username and login_pw "
+                            "under [Server Parameters] in config.txt, then restart the server.",
+                            503, {"Content-Type": "text/plain; charset=utf-8"})
+        try:
+            auth = request.authorization
+        except (UnicodeDecodeError, ValueError):
+            auth = None   # malformed or non-UTF-8 header: ask for the login again
+        if (auth and auth.username is not None and auth.password is not None
+                and hmac.compare_digest(auth.username.encode("utf-8"), user.encode("utf-8"))
+                and hmac.compare_digest(auth.password.encode("utf-8"), pw.encode("utf-8"))):
             return view(*args, **kwargs)
         return Response("Researcher login required.", 401,
-                        {"WWW-Authenticate": 'Basic realm="Study administration"'})
+                        {"WWW-Authenticate": 'Basic realm="Study administration", charset="UTF-8"'})
     return _wrapped
 
 
@@ -644,4 +716,5 @@ def lab_export(name: str):
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     return Response(generate(), mimetype="text/csv",
-                    headers={"Content-Disposition": f'attachment; filename="{name}-{stamp}.csv"'})
+                    headers={"Content-Disposition": f'attachment; filename="{name}-{stamp}.csv"',
+                             "Cache-Control": "no-store"})

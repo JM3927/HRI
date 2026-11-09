@@ -17,7 +17,8 @@
  *   Visualizer       Canvas audio visualiser (identical in all conditions).
  *   DataCollector    Latency = t_click − t_options_shown, POSTed to
  *                    /api/save_trial with retries, mirrored to psiTurk.
- *   Session          Orchestrates preload → sound check → dialogue → save.
+ *   Session          Orchestrates preload → "Begin" click → dialogue → save.
+ *                    (The video and sound check is its own page, /avcheck.)
  *
  * Timing notes
  *   All times use the performance.now() monotonic clock. t_options_shown is
@@ -536,23 +537,6 @@
     async unlock() {
       const ctx = this.ensureContext();
       if (ctx && ctx.state === 'suspended') await ctx.resume();
-    }
-
-    /** Short sine tone for the sound check (no audio file needed). */
-    async playTestTone() {
-      await this.unlock();
-      if (!this.ctx) return;
-      const t0 = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.frequency.value = 440;
-      gain.gain.setValueAtTime(0, t0);
-      gain.gain.linearRampToValueAtTime(0.18, t0 + 0.05);
-      gain.gain.setValueAtTime(0.18, t0 + 1.1);
-      gain.gain.linearRampToValueAtTime(0, t0 + 1.2);
-      osc.connect(gain).connect(this.ctx.destination);
-      osc.start(t0);
-      osc.stop(t0 + 1.25);
     }
 
     _route(el) {
@@ -1248,11 +1232,11 @@
       this.path = [];
       this.t0 = performance.now();
       this.ui = {
-        modal: $('preload-modal'), loading: $('preload-loading'), fill: $('preload-fill'),
+        start: $('start-panel'), loading: $('preload-loading'), fill: $('preload-fill'),
         progress: $('preload-progress'), count: $('preload-count'), bytes: $('preload-bytes'),
         error: $('preload-error'), errorText: $('preload-error-text'), missing: $('preload-missing'),
         retry: $('preload-retry'), simulate: $('preload-simulate'),
-        soundcheck: $('soundcheck'), tone: $('tone-btn'), toneOk: $('tone-ok'), begin: $('begin-btn'),
+        ready: $('start-ready'), begin: $('begin-btn'),
         card: $('question-card'), eyebrow: $('question-eyebrow'), question: $('question-text'),
         caption: $('caption'), options: $('options'), resume: $('resume'), resumeBtn: $('resume-btn'),
         pill: $('status-pill'), status: $('status-text'), track: $('stage-track'),
@@ -1297,9 +1281,7 @@
 
       this.visualizer = new Visualizer($('visualizer'), 28);
       this.ui.retry.addEventListener('click', () => this.preload());
-      this.ui.simulate.addEventListener('click', () => this.enterSoundcheck(new Map(), true));
-      this.ui.tone.addEventListener('click', () => this.player && this.player.playTestTone());
-      this.ui.toneOk.addEventListener('change', () => { this.ui.begin.disabled = !this.ui.toneOk.checked; });
+      this.ui.simulate.addEventListener('click', () => this.enterReady(new Map(), true));
       this.ui.begin.addEventListener('click', () => this.begin());
 
       // Audio mode: draw the avatar immediately so participants see the same
@@ -1332,7 +1314,7 @@
       const ui = this.ui;
       ui.error.hidden = true;
       ui.loading.hidden = false;
-      ui.soundcheck.hidden = true;
+      ui.ready.hidden = true;
 
       const preloader = new Preloader(this.manifest(), (p) => {
         const pct = Math.round(p.fraction * 100);
@@ -1348,7 +1330,7 @@
         const idle = assets.get('__idle');
         if (idle) this.avatar = new AvatarRenderer($('avatar-stage'), this.cond, null, idle.el);
         else if (portrait) this.avatar = new AvatarRenderer($('avatar-stage'), this.cond, portrait.el);
-        this.enterSoundcheck(assets, false);
+        this.enterReady(assets, false);
       } catch (err) {
         ui.loading.hidden = true;
         ui.error.hidden = false;
@@ -1370,7 +1352,8 @@
       }
     }
 
-    enterSoundcheck(assets, simulated) {
+    /** Everything is loaded: show "Begin" (the click is what lets the browser play sound). */
+    enterReady(assets, simulated) {
       this.assets = assets;
       this.player = new AudioPlayer(assets, { simulated, transcripts: this.engine.transcripts() });
       this.simulated = simulated;
@@ -1379,18 +1362,17 @@
       if (!this.avatar) this.avatar = new AvatarRenderer($('avatar-stage'), this.cond, null);
       this.ui.loading.hidden = true;
       this.ui.error.hidden = true;
-      this.ui.soundcheck.hidden = false;
-      if (simulated) {
-        this.ui.tone.disabled = true;
-        this.ui.toneOk.checked = true;
-        this.ui.begin.disabled = false;
-      }
+      this.ui.ready.hidden = false;
+      this.ui.begin.disabled = false;
+      $('start-title').textContent = 'Ready to begin';
+      this.ui.begin.focus({ preventScroll: true });
     }
 
     async begin() {
       this.ui.begin.disabled = true;
       try { await this.player.unlock(); } catch (err) { console.warn('AudioContext resume failed', err); }
-      this.ui.modal.hidden = true;
+      this.ui.start.hidden = true;
+      this.ui.card.hidden = false;
       window.addEventListener('beforeunload', this.onBeforeUnload);
       if (this.psiTurk) {
         this.psiTurk.recordUnstructuredData('session_started_at', new Date().toISOString());
@@ -1642,9 +1624,10 @@
 
     fatal(message) {
       console.error(message);
-      this.ui.modal.hidden = false;
+      this.ui.card.hidden = true;
+      this.ui.start.hidden = false;
       this.ui.loading.hidden = true;
-      this.ui.soundcheck.hidden = true;
+      this.ui.ready.hidden = true;
       this.ui.error.hidden = false;
       this.ui.errorText.textContent = message + ' Please tell the researcher.';
       this.ui.missing.replaceChildren();

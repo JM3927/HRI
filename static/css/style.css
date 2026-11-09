@@ -209,6 +209,19 @@ code { font-size: .9em; background: var(--surface-2); padding: .1em .35em; borde
 .brief-box h3 { font-size: .95rem; margin: 0 0 6px; }
 .brief-box ul { margin: 0; padding-left: 1.2em; color: var(--ink-2); }
 .brief-box li { margin-bottom: 3px; }
+.brief-steps li.is-done { opacity: .7; }
+.brief-steps li.is-done .brief-step-num { background: var(--ok); }
+/* The three counselor pictures: one row, each a square sized to the window height
+   so the whole row fits on one page (the pager never needs to scroll). */
+.brief-counselors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.brief-counselor { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.brief-photo {
+  position: relative; width: min(100%, 34vh); aspect-ratio: 1 / 1; border-radius: var(--radius); overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center;
+}
+.brief-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.brief-photo-missing { padding: 10px; font-size: .75rem; line-height: 1.4; color: var(--ink-3); text-align: center; overflow-wrap: anywhere; }
+.brief-counselor figcaption { font-weight: 600; text-align: center; font-size: .95rem; }
 .check { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
 .check input { margin-top: 4px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
 
@@ -398,8 +411,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   display: flex; flex-direction: column;
 }
 .modal-card h2 { margin-top: 20px; }
-.howto { padding-left: 1.2em; color: var(--ink-2); }
-.howto li { margin-bottom: 4px; }
+/* Conversation page: in-page loading / "Begin" panel (replaces the old overlay). */
+.start-panel .btn-row { margin-top: 12px; }
+.start-panel .missing-list { max-height: 9em; overflow: hidden; }
+/* Video and sound check page: test video beside the two confirmations; the video
+   is sized from the window height so the whole check stays on one screen. */
+.avcheck-grid {
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 2fr); gap: 24px; align-items: center;
+}
+.avcheck-video video {
+  display: block; width: min(100%, calc((100dvh - 400px) * 16 / 9)); aspect-ratio: 16 / 9;
+  min-width: 200px; margin: 0 auto; background: #000; border-radius: var(--radius-sm);
+}
+.avcheck-confirm { display: flex; flex-direction: column; gap: 2px; }
+.avcheck-status { margin: 0 0 6px; color: var(--ink-2); font-size: .95rem; }
+.avcheck-help { margin: 0; }
+.avcheck-help p { margin: 0 0 4px; }
+.avcheck-help ul { margin: 0; padding-left: 1.2em; }
+.check input:disabled + span { color: var(--ink-3); }
+.btn-link {
+  align-self: flex-start; margin-top: 6px; padding: 2px 0; border: 0; background: none; cursor: pointer;
+  color: var(--accent); font: inherit; font-size: .9rem; text-decoration: underline;
+}
+@media (max-width: 720px) { .avcheck-grid { grid-template-columns: 1fr; gap: 12px; } }
 .progress { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; margin: 16px 0 8px; }
 .progress-fill { height: 100%; width: 0; background: var(--accent); transition: width .15s linear; }
 .progress-meta { display: flex; justify-content: space-between; font-size: .85rem; color: var(--ink-3); }

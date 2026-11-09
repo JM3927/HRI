@@ -11,7 +11,7 @@
 
 {% block header_extra %}
 <div class="header-progress" aria-label="Study progress">
-  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-done">About you</span><span class="step is-done">Conversation</span><span class="step is-current">Your impressions</span>
+  <span class="step is-done">Consent</span><span class="step is-done">About you</span><span class="step is-done">Study info</span><span class="step is-done">Conversation</span><span class="step is-current">Your impressions</span>
 </div>
 {% endblock %}
 
@@ -31,10 +31,11 @@
     <legend class="survey-block-title">About the therapist</legend>
     {{ choice_question(manipulation_check) }}
 
-    <div class="question" data-unit>
-      <label class="question-label" for="comments">Is there anything else you would like to tell us about the conversation? <span class="optional">(optional)</span></label>
-      <textarea id="comments" name="comments" rows="4" maxlength="{{ comments_max }}"
+    <div class="question" data-required="comments" data-unit>
+      <label class="question-label" for="comments">Is there anything else you would like to tell us about the conversation?</label>
+      <textarea id="comments" name="comments" rows="4" maxlength="{{ comments_max }}" required
                 placeholder="Please do not include names or other identifying details."></textarea>
+      <p class="field-error" data-error-for="comments" hidden>Please write an answer to this question.</p>
     </div>
   </fieldset>
   </div>

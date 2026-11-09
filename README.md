@@ -43,27 +43,30 @@ data-quality check.
 ## Participant flow
 
 ```
-/consent ─Agree─▶ /briefing ─▶ /pretest ─▶ /exp ─▶ /posttest ─▶ /complete
-   │                               │          │          │
-   │ Decline: nothing stored       │   POST /api/save_trial (one row per answer)
-                         POST /api/save_pretest        POST /api/save_posttest
+/consent ─Agree─▶ /pretest ─▶ /briefing ─▶ /avcheck ─▶ /exp ─▶ /posttest ─▶ /complete
+   │                  │                                 │          │
+   │ Decline: nothing stored                            │   POST /api/save_trial (one row per answer)
+             POST /api/save_pretest                             POST /api/save_posttest
 ```
 
 | # | Page | What happens |
 |---|------|--------------|
 | 1 | **Consent** (`/consent`) | Purpose, what you will do, "this is not therapy", risks, confidentiality, voluntary participation, contact. *I agree* unlocks only after three affirmations: 18 or older, read and understood, understands it is a research simulation and not treatment. *I do not agree* stores nothing. |
-| 2 | **Study briefing** (`/briefing`) | Six topics, one per page: what the study is about, what will happen (with times), how the conversation works, what is and is not recorded, looking after yourself, and an invitation to ask the researcher questions. Stores nothing. |
-| 3 | **About you** (`/pretest`) | Demographics, experience with technology and robots, help-seeking attitudes, openness to an AI/robot counselor, robot anxiety (26 questions). |
-| 4 | **Conversation** (`/exp`) | Videos load, then a sound check (test tone), then the conversation: 6 or 7 questions, each answered by clicking one of three options. |
-| 5 | **Your impressions** (`/posttest`) | Trust, willingness to use, empathy, disclosure comfort (including the attention check), anthropomorphism, "which counselor did you speak with?", and an optional comment (39 questions plus the comment). |
-| 6 | **Debrief** (`/complete`) | Explains the study and the three conditions, says the conversation was pre-recorded and scripted, asks participants not to discuss it, and repeats the support resources. The participant is marked COMPLETED. |
+| 2 | **About you** (`/pretest`) | Demographics first (age, gender, prior therapy), then experience with technology and robots, help-seeking attitudes, openness to an AI/robot counselor, robot anxiety (23 questions). |
+| 3 | **Study briefing** (`/briefing`) | Seven topics, one per page: what the study is about, **the three counselors (with a picture of each)**, what will happen (with times; "About you" shown as done), how the conversation works, what is and is not recorded, looking after yourself, and an invitation to ask the researcher questions. Stores nothing. |
+| 4 | **Video and sound check** (`/avcheck`) | Its own page. The participant plays a short test video (`static/video/avcheck.mp4`) and ticks "I can see the video" and "I can hear the sound clearly". The boxes unlock only after the video has played to the end, and *Continue* only once both are ticked; "It isn't working" shows troubleshooting tips. Stores nothing. |
+| 5 | **Conversation** (`/exp`) | The counselor's videos load (a progress bar in the page, no overlay), then *Begin the conversation*, then 6 or 7 questions, each answered by clicking one of three options. |
+| 6 | **Your impressions** (`/posttest`) | Trust, willingness to use, empathy, disclosure comfort (including the attention check), anthropomorphism, "which counselor did you speak with?", and a required final comment (39 questions including the comment). |
+| 7 | **Debrief** (`/complete`) | Explains the study and the three conditions, says the conversation was pre-recorded and scripted, asks participants not to discuss it, and repeats the support resources. The participant is marked COMPLETED. |
 
-* **Pages are gated on the server.** The briefing needs consent, the pre-test needs the
-  briefing, the conversation needs the pre-test, and so on. A participant cannot skip
-  ahead, redo the conversation, or retake a questionnaire.
-* **Same framing for everyone.** The consent, briefing and pre-test say only that the
-  study compares "different kinds of counselors, and some of them are robots". The
-  conditions and hypotheses are explained only in the debrief. Questionnaire wording is
+* **Pages are gated on the server.** "About you" needs consent, the briefing needs the
+  saved "About you" answers, the video and sound check needs the briefing, the
+  conversation needs the check, and so on. A
+  participant cannot skip ahead, redo the conversation, or retake a questionnaire.
+* **Same framing for everyone.** The consent and "About you" say only that the study
+  compares "different kinds of counselors, and some of them are robots". The briefing
+  then shows all three counselors to everyone, but never which one the participant will
+  meet. The hypotheses are explained only in the debrief. Questionnaire wording is
   identical across conditions; the post-test page is never told the condition.
 * **Support line on every page.** The footer shows 988 (US Suicide & Crisis Lifeline)
   and the Crisis Text Line (text HOME to 741741).
@@ -120,8 +123,8 @@ contact_email_on_error = meng172@pnw.edu
 
 * `num_conds = 3` is **required** for the three conditions; the server logs an error at
   start-up if it is anything else.
-* `login_username` / `login_pw` protect the researcher console and data exports from
-  other computers. Never commit them.
+* `login_username` / `login_pw` protect the researcher console and data exports. They
+  are **required**: without them `/lab` stays closed. Never commit them.
 
 **4. Start the server:**
 
@@ -146,12 +149,17 @@ there.
 
 ## Running sessions
 
-1. Open `http://<server>:22362/lab`. Requests from the server itself need no login;
-   anyone else is asked for `login_username` / `login_pw`.
+1. Open `http://<server>:22362/lab` and log in with `login_username` / `login_pw`.
+   The login is asked for on every computer, including the server itself, because a
+   tunnel such as Tailscale Funnel makes internet visitors look local.
 2. Enter a participant code and choose the mode:
-   * **Live participant:** real data. Re-using a participant code is blocked.
+   * **Live participant:** real data. Re-using a participant code is blocked. If the
+     window is closed by mistake, opening the same link again resumes where they left off.
    * **Practice / pilot:** ids get a `debug-` prefix and are stored with `mode = debug`,
-     so you can exclude them. Reusing codes is allowed.
+     so you can exclude them. Reusing codes is allowed, and opening a practice link
+     again (or the `/ad` link from `psiturk debug`) always starts the whole study over
+     from consent, as a new run: a `-r` tag is added to the ids, and the earlier
+     run stays in the data under its own ids.
 3. Click *Start session on this workstation* and hand the computer to the participant.
    They need headphones.
 4. The console shows how many sessions have started and completed in each condition, and
@@ -176,7 +184,7 @@ scored. Scores are computed on the server.
 
 | Block | Items | Scale | Score |
 |-------|-------|-------|-------|
-| Age, gender, race/ethnicity (multi-select), prior therapy | 4 | choices; age 18–80 | — |
+| Demographics: age, gender, prior therapy (asked first) | 3 | choices; age 18–80 | — |
 | Experience with technology | 2 | 1–7 | `tech_familiarity`, `robot_exposure` |
 | Attitudes toward counseling: ATSPPH-SF (Fischer & Farina, 1995) | 10 | 0–3; items 2, 4, 8, 9, 10 reversed | `atspph_total` (0–30) |
 | Openness to an AI or robotic counselor | 1 | 1–7 | `ai_counseling_openness` |
@@ -192,7 +200,7 @@ scored. Scores are computed on the server.
 | Comfort and disclosure (study-specific) + attention check | 4 + 1 | 1–7 agree; `dc_4` reversed | `disclosure_comfort_mean`, `attention_check_passed` |
 | Godspeed Anthropomorphism (Bartneck et al., 2009) | 5 | 1–5 semantic differential | `godspeed_anthropomorphism_mean` |
 | Which counselor did you speak with? (manipulation check) | 1 | human / social robot / mechanical robot / unsure | `mc_correct` |
-| Comment | optional | free text, up to 2000 characters | — |
+| Comment: "Is there anything else you would like to tell us about the conversation?" | 1, required | free text, up to 2000 characters | — |
 
 **MDMT words used (16 of the original 20):**
 
@@ -310,8 +318,8 @@ tables. Each row joins to psiTurk's participant table (`Therapy_Participant_Data
 `uniqueid` (`workerId:assignmentId`).
 
 **`pretest.csv` (pretest_survey)**
-- Background: `age`, `gender` (+ `gender_self_describe`), `ethnicity` (comma-separated
-  codes, + `ethnicity_self_describe`), `prior_therapy`, `tech_familiarity`, `robot_exposure`.
+- Background: `age`, `gender` (+ `gender_self_describe`), `prior_therapy`,
+  `tech_familiarity`, `robot_exposure`. Race/ethnicity is not asked.
 - Help-seeking: `atspph_1…10` (raw 0–3) and `atspph_total`.
 - Openness: `ai_counseling_openness`.
 - Robot anxiety: `ras_s1_1…3`, `ras_s3_1…4`, `ras_s1_mean`, `ras_s3_mean`, `ras_total_mean`.
@@ -361,9 +369,11 @@ After any edit, restart the server (`psiturk server off`, then `psiturk server o
 | Study title, institution, PI, contact email, duration, crisis lines | `STUDY_INFO` at the top of `custom.py` |
 | Consent wording | `templates/consent.html` (change `CONSENT_VERSION` in `custom.py` when you do) |
 | Study briefing | `templates/briefing.html`: one `<section>` per page; keep it the same for every condition |
+| Counselor pictures on the briefing | put `human.jpg`, `furhat.jpg` and `peerbot.jpg` in `static/images/counselors/` (square, about 600 × 600 px); a missing file shows a grey placeholder naming it |
 | Questionnaire wording, items, scales | `instruments.py` (renaming an item id needs a new database) |
 | What the counselor says, the questions, the answer buttons | the dialogue tree in `static/js/task.js`, between `BEGIN_DIALOGUE_TREE` and `END_DIALOGUE_TREE` (strict JSON), then re-record |
-| The conversation page (loading screen, sound check, stage bar) | `templates/exp.html` |
+| Video and sound check page | `templates/avcheck.html`; the test clip is `static/video/avcheck.mp4` (replace it with your own short H.264/AAC clip if you like; keep it neutral, the same for every condition) |
+| The conversation page (loading panel, Begin button, stage bar) | `templates/exp.html` |
 | Debrief | `templates/complete.html` |
 | Colours, fonts, spacing | `static/css/style.css` |
 
@@ -384,6 +394,7 @@ templates/
   macros.html           Rating-grid and multiple-choice question templates
   consent.html          Informed consent
   briefing.html         Study briefing
+  avcheck.html          Video and sound check (test video + two confirmations)
   pretest.html          "About you" questionnaire
   exp.html              Conversation page
   posttest.html         "Your impressions" questionnaire
@@ -396,7 +407,8 @@ static/js/survey.js     Questionnaire pages: validation and submission
 static/js/pager.js      Splits pages into screen-sized steps (no scrolling)
 static/css/style.css    Styles
 static/lib/             jQuery, Underscore, Backbone (needed by psiTurk's psiturk.js)
-static/video/           The 87 counselor videos (Git LFS)
+static/images/counselors/  human.jpg, furhat.jpg, peerbot.jpg for the briefing (you add these)
+static/video/           The 87 counselor videos (Git LFS), plus avcheck.mp4 (the 8-second test clip)
 tools/audio_assets.py   Writes audio_script.csv; checks that every video exists
 tools/record_takes.py   Records the clips through OBS (Furhat robot or teleprompter mode)
 audio_script.csv        Recording script generated from the dialogue tree
@@ -439,7 +451,8 @@ Several validated scales were adapted for this study. Report them as adapted:
   briefing and the debrief.
 * No audio, video or image of the participant is recorded. OBS is used only to record
   the counselor clips.
-* Withholding the conditions and hypotheses until the debrief is a form of incomplete
-  disclosure, and the debrief explains them.
+* The briefing shows all three counselors, but which one a participant meets and the
+  hypotheses are withheld until the debrief. That is a form of incomplete disclosure,
+  and the debrief explains it.
 * Participants may withdraw at any time by closing the window; per the consent form,
   their data is then not used.

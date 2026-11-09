@@ -149,26 +149,6 @@ GENDER = ChoiceQuestion(
     self_describe_field="gender_self_describe",
 )
 
-ETHNICITY = ChoiceQuestion(
-    id="ethnicity",
-    text="Which of the following best describe your race and/or ethnicity?",
-    help="Select all that apply.",
-    multiple=True,
-    choices=(
-        Choice("american_indian_alaska_native", "American Indian or Alaska Native"),
-        Choice("asian", "Asian"),
-        Choice("black_african_american", "Black or African American"),
-        Choice("hispanic_latino", "Hispanic or Latino/a/x"),
-        Choice("middle_eastern_north_african", "Middle Eastern or North African"),
-        Choice("native_hawaiian_pacific_islander", "Native Hawaiian or Other Pacific Islander"),
-        Choice("white", "White"),
-        Choice("self_describe", "Prefer to self-describe"),
-        Choice("prefer_not", "Prefer not to say"),
-    ),
-    self_describe_value="self_describe",
-    self_describe_field="ethnicity_self_describe",
-)
-
 PRIOR_THERAPY = ChoiceQuestion(
     id="prior_therapy",
     text="Have you ever spoken with a therapist, counselor, or other mental health professional?",
@@ -202,20 +182,19 @@ ATSPPH_BLOCK = LikertBlock(
     items=(
         Item("atspph_1", "If I thought I was having a mental breakdown, my first thought would be "
                          "to get professional attention.", "atspph"),
-        Item("atspph_2", "The idea of talking about problems with a psychologist strikes me as a poor way "
-                         "to get rid of emotional conflicts.", "atspph", reverse=True),
+        Item("atspph_2", "If I had emotional conflicts, I would not got to a "
+                         "psychologist.", "atspph", reverse=True),
         Item("atspph_3", "If I were experiencing a serious emotional crisis at this point in my life, I "
                          "would be confident that psychological therapy would help.", "atspph"),
-        Item("atspph_4", "There is something admirable in the attitude of a person who is willing to deal "
-                         "with his or her conflicts and fears without going to professional help.",
+        Item("atspph_4", "I think that people who deal with their own conflicts or " 			"fears without going to professional help are more admirable."
              "atspph", reverse=True),
         Item("atspph_5", "I would want to get psychological help if I were worried or upset for a long "
                          "period of time.", "atspph"),
         Item("atspph_6", "I might want to have psychological counseling in the future.", "atspph"),
         Item("atspph_7", "A person with an emotional problem is not likely to solve it alone. They are more "
                          "likely to solve it with professional help.", "atspph"),
-        Item("atspph_8", "Considering the time and expense involved in psychological therapy, it would be wasted "
-                         "value for a person like me.", "atspph", reverse=True),
+        Item("atspph_8", "Psychological therapy does not seem worth it, given the time "
+                         "and money put into it.", "atspph", reverse=True),
         Item("atspph_9", "A person should work out his or her own problems, and getting psychological "
                          "counseling should be a last resort.", "atspph", reverse=True),
         Item("atspph_10", "Personal and emotional troubles, like many things, tend to work out by "
@@ -256,7 +235,7 @@ RAS_BLOCK = LikertBlock(
     ),
 )
 
-PRETEST_CHOICES = (GENDER, ETHNICITY, PRIOR_THERAPY)
+PRETEST_CHOICES = (GENDER, PRIOR_THERAPY)
 # Counseling attitudes come before the robot items so the general measures are
 # answered before robots are mentioned.
 PRETEST_BLOCKS = (TECH_BLOCK, ATSPPH_BLOCK, AI_OPENNESS_BLOCK, RAS_BLOCK)
@@ -307,7 +286,7 @@ MDMT_BLOCK_B = LikertBlock(
         Item("mdmt_considerate", "considerate", "benevolent"),
         Item("mdmt_consistent", "consistent", "reliable"),
         Item("mdmt_meticulous", "meticulous", "competent"),
-        Item("mdmt_honorable", "honorable",  "ethical"), 
+        Item("mdmt_integrity", "honorable",  "ethical"),
         Item("mdmt_genuine", "genuine", "sincere"),
     ),
 )
@@ -545,7 +524,6 @@ def score_pretest(responses) -> Tuple[dict, List[str]]:
     row["age"] = age
 
     row["gender"], row["gender_self_describe"] = _validate_choice(GENDER, responses, errors)
-    row["ethnicity"], row["ethnicity_self_describe"] = _validate_choice(ETHNICITY, responses, errors)
     row["prior_therapy"], _ = _validate_choice(PRIOR_THERAPY, responses, errors)
 
     for block in PRETEST_BLOCKS:
@@ -574,6 +552,8 @@ def score_posttest(responses, condition: int) -> Tuple[dict, List[str]]:
 
     row["mc_embodiment"], _ = _validate_choice(MANIPULATION_CHECK, responses, errors)
     row["comments"] = _clean_text(responses.get("comments"), COMMENTS_MAX_CHARS)
+    if row["comments"] is None:
+        errors.append("comments: required")
 
     if not errors:
         # MDMT v2: subscale = mean of its non-N/A items; factors = mean of
@@ -600,7 +580,7 @@ def score_posttest(responses, condition: int) -> Tuple[dict, List[str]]:
 
 def all_item_ids() -> Dict[str, List[str]]:
     """Every stored field name per survey — used for the start-up schema check."""
-    pre = ["age", "gender", "gender_self_describe", "ethnicity", "ethnicity_self_describe", "prior_therapy"]
+    pre = ["age", "gender", "gender_self_describe", "prior_therapy"]
     pre += [i.id for b in PRETEST_BLOCKS for i in b.items]
     post = [i.id for b in POSTTEST_BLOCKS for i in b.items] + ["mc_embodiment", "comments"]
     return {"pretest": pre, "posttest": post}

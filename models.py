@@ -69,8 +69,7 @@ class PreTestSurvey(_SerializableMixin, Base):
     age = Column(Integer, nullable=False)
     gender = Column(String(32), nullable=False)
     gender_self_describe = Column(String(100), nullable=True)
-    ethnicity = Column(String(256), nullable=False, doc="Comma-separated choice codes")
-    ethnicity_self_describe = Column(String(100), nullable=True)
+    # (Race/ethnicity is not asked in this study.)
 
     # Prior experience
     prior_therapy = Column(String(16), nullable=False, doc="yes | no | prefer_not")

@@ -88,7 +88,7 @@
     {% endfor %}
   </div>
   {% if q.self_describe_field %}
-  <div class="self-describe" data-for="{{ q.self_describe_field }}" hidden>
+  <div class="self-describe" data-for="{{ q.self_describe_field }}" data-pager-reserve hidden>
     <label for="{{ q.self_describe_field }}" class="sr-only">Please describe</label>
     <input type="text" id="{{ q.self_describe_field }}" name="{{ q.self_describe_field }}"
            maxlength="100" placeholder="Please describe (optional)" autocomplete="off">

@@ -2,19 +2,22 @@
   exp.html — Interactive therapist session.
 
   Rendered by psiTurk's own /exp view (after custom.exp_gate has checked
-  consent and the pre-test). psiTurk supplies: uniqueId, condition,
+  the pre-test, the briefing and the video and sound check). psiTurk supplies: uniqueId, condition,
   counterbalance, adServerLoc, mode. The `default` filters keep the page
   renderable even if a psiTurk release omits one of them.
 
+  Reached from the video and sound check page (/avcheck), which comes after the
+  study briefing; the sound check is no longer on this page.
+
   All behaviour lives in static/js/task.js; this file is layout only:
-    #preload-modal   audio/video preloader with progress bar + sound check
+    #start-panel     in-page panel (not an overlay): loading progress, then a
+                     "Begin" button (the click lets the browser play sound)
     #avatar-stage    condition-specific avatar (drawn, portrait, or recorded video)
     #visualizer      live audio visualiser (identical across conditions)
-    #question-card   question + options, revealed only after audio ends
+    #question-card   question + options, shown after Begin; options appear when the clip ends
     #finish-modal    final save before moving to the post-test
   Nothing scrolls: the session grid fills the window (the avatar is the largest
-  square that fits) and the preloader is paged by static/js/pager.js, so on a
-  short screen the sound check and the instructions become two steps.
+  square that fits).
 #}
 {% extends "layout.html" %}
 {% block title %}Conversation · {{ study.short_title }}{% endblock %}
@@ -22,76 +25,11 @@
 
 {% block header_extra %}
 <div class="header-progress" aria-label="Study progress">
-  <span class="step is-done">Consent</span><span class="step is-done">Study info</span><span class="step is-done">About you</span><span class="step is-current">Conversation</span><span class="step">Your impressions</span>
+  <span class="step is-done">Consent</span><span class="step is-done">About you</span><span class="step is-done">Study info</span><span class="step is-current">Conversation</span><span class="step">Your impressions</span>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- ============================ Preloader ============================ -->
-<div class="modal" id="preload-modal" role="dialog" aria-modal="true" aria-labelledby="preload-title">
-  <div class="modal-card pager" data-pager>
-    <div class="pager-body">
-    <header data-unit>
-      <p class="eyebrow">Part 2 of 3</p>
-      <h1 id="preload-title">Preparing your conversation</h1>
-    </header>
-
-    <div id="preload-loading" data-unit>
-      <p id="preload-message">Loading the audio so the conversation plays smoothly. This takes a few seconds.</p>
-      <div class="progress" id="preload-progress" role="progressbar"
-           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="preload-message">
-        <div class="progress-fill" id="preload-fill"></div>
-      </div>
-      <p class="progress-meta">
-        <span id="preload-count">0 of 0 files</span>
-        <span id="preload-bytes"></span>
-      </p>
-    </div>
-
-    <div class="alert alert-error" id="preload-error" role="alert" data-unit hidden>
-      <p id="preload-error-text"><strong>Some files could not be loaded.</strong> Please tell the researcher.</p>
-      <ul class="missing-list" id="preload-missing"></ul>
-      <div class="btn-row">
-        <button type="button" class="btn btn-ghost" id="preload-retry">Try again</button>
-        <button type="button" class="btn btn-ghost" id="preload-simulate" hidden>Continue with simulated audio (debug only)</button>
-      </div>
-    </div>
-
-    <div id="soundcheck" hidden>
-      <div data-unit>
-      <h2>Sound check</h2>
-      <p>Please put on the headphones. Play the test tone and adjust the volume until it is clear and comfortable.</p>
-      <div class="btn-row btn-row-start">
-        <button type="button" class="btn btn-ghost" id="tone-btn">▶ Play test tone</button>
-      </div>
-      <label class="check">
-        <input type="checkbox" id="tone-ok">
-        <span>I can hear the tone clearly at a comfortable volume.</span>
-      </label>
-      </div>
-
-      <div data-unit>
-      <h2>How the conversation works</h2>
-      <ul class="howto">
-        <li>The therapist will speak to you through your headphones.</li>
-        <li>When they finish speaking, answer choices will appear. Choose the one that feels closest to true for you.</li>
-        <li>There are no right or wrong answers, and the conversation cannot be paused or replayed.</li>
-      </ul>
-      <div class="btn-row">
-        <button type="button" class="btn btn-primary" id="begin-btn" disabled>Begin conversation</button>
-      </div>
-      </div>
-    </div>
-    </div>
-
-    <div class="pager-nav">
-      <span class="pager-count" data-pager-count></span>
-      <button type="button" class="btn btn-ghost" data-pager-back>Back</button>
-      <button type="button" class="btn btn-primary" data-pager-next>Next</button>
-    </div>
-  </div>
-</div>
-
 <!-- ============================ Session ============================== -->
 <section class="session" id="session" aria-label="Conversation with the therapist">
   <ol class="stage-track" id="stage-track" aria-label="Conversation progress">
@@ -114,7 +52,44 @@
     </div>
 
     <div class="question-panel">
-      <div class="question-card" id="question-card" data-state="idle" aria-live="polite">
+      <!-- Before the conversation: loading progress, then "Begin". An ordinary
+           panel in the page (no overlay); it is replaced by the question card
+           once the participant clicks Begin. -->
+      <div class="question-card start-panel" id="start-panel" aria-live="polite">
+        <p class="question-eyebrow">Part 2 of 3</p>
+        <h2 class="question-text" id="start-title">Getting the conversation ready</h2>
+
+        <div id="preload-loading">
+          <p id="preload-message">Loading the conversation so it plays smoothly. This can take up to a minute.</p>
+          <div class="progress" id="preload-progress" role="progressbar"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="preload-message">
+            <div class="progress-fill" id="preload-fill"></div>
+          </div>
+          <p class="progress-meta">
+            <span id="preload-count">0 of 0 files</span>
+            <span id="preload-bytes"></span>
+          </p>
+        </div>
+
+        <div class="alert alert-error" id="preload-error" role="alert" hidden>
+          <p id="preload-error-text"><strong>Some files could not be loaded.</strong> Please tell the researcher.</p>
+          <ul class="missing-list" id="preload-missing"></ul>
+          <div class="btn-row btn-row-start">
+            <button type="button" class="btn btn-ghost" id="preload-retry">Try again</button>
+            <button type="button" class="btn btn-ghost" id="preload-simulate" hidden>Continue with simulated audio (debug only)</button>
+          </div>
+        </div>
+
+        <div id="start-ready" hidden>
+          <p>Everything is ready. Keep your headphones on. When you click <strong>Begin</strong>, the counselor
+            will start speaking.</p>
+          <div class="btn-row btn-row-start">
+            <button type="button" class="btn btn-primary" id="begin-btn">Begin the conversation</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-card" id="question-card" data-state="idle" aria-live="polite" hidden>
         <p class="question-eyebrow" id="question-eyebrow">Your conversation will begin shortly.</p>
         <h2 class="question-text" id="question-text"></h2>
         <p class="caption" id="caption" hidden></p>
